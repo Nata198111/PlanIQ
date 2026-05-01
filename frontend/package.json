@@ -1,0 +1,12 @@
+{
+  "name": "planiq-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "serve . -l 3000"
+  },
+  "devDependencies": {
+    "serve": "^14.2.6"
+  }
+}

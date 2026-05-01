@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html class="dark" lang="uk">
+<head>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+  <title>ПланІQ — Когнітивне Святилище Планування</title>
+  <meta name="description" content="ПланІQ — інтелектуальна система планування, що адаптується до вашого ритму життя." />
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "on-secondary": "#003737",
+            "on-secondary-fixed-variant": "#004f50",
+            "on-surface-variant": "#c7c4d8",
+            "on-tertiary-fixed": "#400012",
+            "surface-container": "#1f1e2a",
+            "inverse-surface": "#e3e0f1",
+            "on-tertiary-fixed-variant": "#8f0935",
+            "primary": "#c4c0ff",
+            "surface-bright": "#383845",
+            "tertiary": "#ffb2bc",
+            "on-tertiary": "#670023",
+            "inverse-on-surface": "#302f3b",
+            "tertiary-fixed-dim": "#ffb2bc",
+            "outline": "#918fa1",
+            "on-primary-container": "#1b0091",
+            "tertiary-container": "#f35c7b",
+            "on-primary": "#2000a4",
+            "on-error-container": "#ffdad6",
+            "surface-dim": "#12121d",
+            "secondary-container": "#00b3b3",
+            "error-container": "#93000a",
+            "error": "#ffb4ab",
+            "on-tertiary-container": "#5a001d",
+            "on-secondary-container": "#003e3e",
+            "secondary": "#4ddada",
+            "on-error": "#690005",
+            "surface-variant": "#343440",
+            "primary-fixed": "#e3dfff",
+            "outline-variant": "#464555",
+            "on-background": "#e3e0f1",
+            "primary-container": "#8781ff",
+            "on-surface": "#e3e0f1",
+            "secondary-fixed-dim": "#4ddada",
+            "on-secondary-fixed": "#002020",
+            "background": "#12121d",
+            "inverse-primary": "#4f44e2",
+            "surface-container-low": "#1b1a26",
+            "on-primary-fixed": "#100069",
+            "on-primary-fixed-variant": "#3622ca",
+            "surface-container-lowest": "#0d0d18",
+            "surface-container-high": "#292935",
+            "surface": "#12121d",
+            "secondary-fixed": "#6ff7f6",
+            "surface-tint": "#c4c0ff",
+            "primary-fixed-dim": "#c4c0ff",
+            "surface-container-highest": "#343440",
+            "tertiary-fixed": "#ffd9dd"
+          },
+          fontFamily: {
+            "headline": ["Inter"],
+            "body": ["Inter"],
+            "label": ["Inter"],
+            "mono": ["JetBrains Mono", "monospace"]
+          },
+          borderRadius: {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "2xl": "1rem",
+            "3xl": "1.5rem",
+            "full": "9999px"
+          },
+        },
+      },
+    }
+  </script>
+  <link href="src/styles/main.css" rel="stylesheet" />
+</head>
+<body class="bg-[#0F0F1A] text-[#e3e0f1] font-body min-h-screen">
+  <div id="app" class="fade-in"></div>
+  <div class="fixed top-0 left-0 w-full h-full pointer-events-none -z-10 overflow-hidden">
+    <div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#c4c0ff]/5 blur-[120px] rounded-full"></div>
+    <div class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#4ddada]/5 blur-[120px] rounded-full"></div>
+  </div>
+  <script type="module" src="src/app/router.js"></script>
+</body>
+</html>
