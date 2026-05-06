@@ -1,9 +1,11 @@
+import { api } from './api.js';
+
 const AUTH_KEY = 'planiq_auth';
 
 export function isLoggedIn() {
   try {
     const auth = JSON.parse(localStorage.getItem(AUTH_KEY) || '{}');
-    return auth.loggedIn === true;
+    return !!auth.token;
   } catch { return false; }
 }
 
@@ -19,4 +21,31 @@ export function setAuth(data) {
 
 export function clearAuth() {
   localStorage.removeItem(AUTH_KEY);
+}
+
+export async function registerAPI(name, email, password) {
+  const data = await api.post('/auth/register', { name, email, password });
+  // data = { access_token, token_type, user }
+  setAuth({
+    token: data.access_token,
+    user: data.user,
+  });
+  return data.user;
+}
+
+export async function loginAPI(email, password) {
+  const data = await api.post('/auth/login', { email, password });
+  setAuth({
+    token: data.access_token,
+    user: data.user,
+  });
+  return data.user;
+}
+
+export async function fetchMe() {
+  const data = await api.get('/auth/me');
+  // Оновлюємо дані юзера в localStorage
+  const auth = JSON.parse(localStorage.getItem(AUTH_KEY) || '{}');
+  setAuth({ ...auth, user: data });
+  return data;
 }

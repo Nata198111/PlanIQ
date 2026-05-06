@@ -1,4 +1,12 @@
+import { getUser } from "../services/auth.js";
+
 export function renderTopbar(title, options = {}) {
+  const user = getUser();
+  const initials = (user.user?.name || 'U')
+    .split(' ')
+    .slice(0, 2)
+    .map(w => w[0]?.toUpperCase() || '')
+    .join('');
   const { showSearch = false, showNewTask = true } = options;
 
   const searchHTML = showSearch ? `
@@ -24,7 +32,7 @@ export function renderTopbar(title, options = {}) {
     <div class="flex items-center gap-3 md:gap-4 flex-shrink-0">
       ${newTaskHTML}
       <div class="w-9 h-9 md:w-10 md:h-10 rounded-full bg-[#292935] overflow-hidden border border-[#464555]/30 cursor-pointer transition-transform hover:scale-105 active:scale-95" id="topbar-avatar" onclick="window.location.hash='#/settings'">
-        <div class="w-full h-full bg-gradient-to-tr from-[#6C63FF] to-[#3ECFCF] flex items-center justify-center text-xs font-bold text-[#2000a4]">ОЛ</div>
+        <div class="w-full h-full bg-gradient-to-tr from-[#6C63FF] to-[#3ECFCF] flex items-center justify-center text-xs font-bold text-[#2000a4]">${initials}</div>
       </div>
     </div>
   </header>`;

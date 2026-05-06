@@ -1,4 +1,12 @@
+import { getUser } from "../services/auth.js";
+
 export function renderSidebar(activePage, isCollapsed = false) {
+  const user = getUser();
+  const userName = user.user?.name || 'Користувач';
+  const initials = userName.split(' ')
+    .slice(0, 2)
+    .map(w => w[0]?.toUpperCase() || '')
+    .join('');
   const navItems = [
     { id: 'dashboard', icon: 'home', label: 'Головна', route: '#/dashboard' },
     { id: 'tasks', icon: 'task_alt', label: 'Мої задачі', route: '#/tasks' },
@@ -51,10 +59,10 @@ export function renderSidebar(activePage, isCollapsed = false) {
     <div class="mt-auto px-2 space-y-1">
       <a href="#/profile" class="px-4 py-3 flex items-center justify-center lg:justify-start gap-3 mb-4 rounded-xl hover:bg-white/5 transition-colors cursor-pointer group border border-transparent ${activePage === 'profile' ? 'bg-[#292935] border-white/5' : ''}">
         <div class="w-8 h-8 rounded-full bg-gradient-to-tr flex-shrink-0 from-[#6C63FF] to-[#3ECFCF] flex items-center justify-center text-xs font-bold text-[#2000a4] group-hover:scale-110 transition-transform shadow-lg shadow-[#6C63FF]/20">
-          ОЛ
+          ${initials}
         </div>
         <div class="flex flex-col overflow-hidden ${textClass}">
-          <span class="text-xs font-bold text-[#e3e0f1] truncate">Олександр Л.</span>
+          <span class="text-xs font-bold text-[#e3e0f1] truncate">${userName}</span>
           <span class="text-[10px] text-slate-500 truncate group-hover:text-white/70 transition-colors">Профіль користувача</span>
         </div>
       </a>

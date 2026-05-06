@@ -1,5 +1,5 @@
 import { renderFooter } from '../components/footer.js';
-import { setAuth } from '../services/auth.js';
+import { loginAPI } from '../services/auth.js';
 import { toast } from '../services/toast.js';
 
 export function renderLogin() {
@@ -82,7 +82,7 @@ export function initLogin() {
   });
 
   if (form) {
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const email = document.getElementById('login-email').value.trim();
       const password = document.getElementById('login-password').value;
@@ -93,16 +93,21 @@ export function initLogin() {
         return;
       }
 
-      if (password.length < 3) {
-        errorEl.textContent = 'Пароль має містити щонайменше 3 символи';
-        errorEl.classList.remove('hidden');
-        return;
-      }
+      // Блокуємо кнопку під час запиту
+      const btn = form.querySelector('button[type="submit"]');
+      btn.disabled = true;
+      btn.textContent = 'Вхід...';
 
-      errorEl.classList.add('hidden');
-      setAuth({ email, name: 'Олександр', loggedIn: true });
-      toast('Вхід виконано успішно!', 'success');
-      setTimeout(() => { window.location.hash = '#/dashboard'; }, 400);
+      try {
+        await loginAPI(email, password);
+        toast('Вхід виконано успішно!', 'success');
+        setTimeout(() => { window.location.hash = '#/dashboard'; }, 400);
+      } catch (err) {
+        errorEl.textContent = err.message || 'Невірний email або пароль';
+        errorEl.classList.remove('hidden');
+        btn.disabled = false;
+        btn.textContent = 'Увійти';
+      }
     });
   }
 
@@ -110,9 +115,7 @@ export function initLogin() {
     const btn = document.getElementById(id);
     if (btn) {
       btn.addEventListener('click', () => {
-        setAuth({ email: 'alex@example.com', name: 'Олександр', loggedIn: true });
-        toast('Вхід через соцмережу!', 'success');
-        setTimeout(() => { window.location.hash = '#/dashboard'; }, 400);
+        toast('Соціальна авторизація буде доступна пізніше', 'info');
       });
     }
   });

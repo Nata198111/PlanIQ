@@ -1,4 +1,4 @@
-import { setAuth } from '../services/auth.js';
+import { registerAPI } from '../services/auth.js';
 import { toast } from '../services/toast.js';
 
 export function renderRegister() {
@@ -122,7 +122,7 @@ export function initRegister() {
   }
 
   if (form) {
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const name = document.getElementById('reg-name').value.trim();
       const email = emailInput.value.trim();
@@ -145,10 +145,20 @@ export function initRegister() {
         return;
       }
 
-      errorEl.classList.add('hidden');
-      setAuth({ email, name, loggedIn: true });
-      toast('Реєстрація успішна!', 'success');
-      setTimeout(() => { window.location.hash = '#/onboarding'; }, 400);
+      const btn = form.querySelector('button[type="submit"]');
+      btn.disabled = true;
+      btn.textContent = 'Реєстрація...';
+
+      try {
+        await registerAPI(name, email, password);
+        toast('Реєстрація успішна!', 'success');
+        setTimeout(() => { window.location.hash = '#/onboarding'; }, 400);
+      } catch (err) {
+        errorEl.textContent = err.message || 'Помилка реєстрації';
+        errorEl.classList.remove('hidden');
+        btn.disabled = false;
+        btn.textContent = 'Зареєструватися';
+      }
     });
   }
 }
