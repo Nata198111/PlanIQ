@@ -11,6 +11,15 @@ const STATUS_CFG = {
   'Терміново': 'bg-[#93000a]/30 text-[#ffb4ab]',
 };
 
+const getLocalDateKey = (date = new Date()) => {
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+};
+
 const fmtDt = d => {
   const dt = new Date(d);
   const m = ['січ.','лют.','берез.','квіт.','трав.','черв.','лип.','серп.','верес.','жовт.','листоп.','груд.'];
@@ -53,7 +62,7 @@ function renderGroup(lbl, lCls, cCls, items) {
 }
 
 function buildTaskListHTML(tasks) {
-  const now = new Date().toISOString().slice(0, 10);
+  const now = getLocalDateKey();
   return renderGroup('Сьогодні',    '',             'bg-[#c4c0ff]/10 text-[#c4c0ff]',    tasks.filter(t => t.date === now && t.status !== 'Виконано')) +
          renderGroup('Прострочені', 'text-[#ffb4ab]','bg-[#93000a]/30 text-[#ffb4ab]',   tasks.filter(t => t.date < now  && t.status !== 'Виконано')) +
          renderGroup('Інші задачі', 'opacity-60',   'bg-[#343440] text-slate-400',       tasks.filter(t => t.date > now  && t.status !== 'Виконано')) +
@@ -124,7 +133,13 @@ export async function initTasks() {
 
   // ── 1. Функція рендеру списку ──────────────────────────────
   const render = () => {
-    const now = new Date().toISOString().slice(0, 10);
+    const cont = document.getElementById('task-list-cont');
+    const empty = document.getElementById('task-empty');
+
+    if (!cont || !empty) {
+      return;
+    }
+    const now = getLocalDateKey();
     const filtered = taskStore.getAll().filter(t => {
       const mS  = t.title.toLowerCase().includes(query) || (CATEGORIES[t.category]?.label || '').toLowerCase().includes(query);
       const mSt = filters.status === 'all' || t.status === filters.status;
@@ -132,8 +147,6 @@ export async function initTasks() {
       const mD  = filters.deadline === 'all' || (filters.deadline === 'today' ? t.date === now : filters.deadline === 'week' ? (new Date(t.date) - new Date(now)) < 7 * 86400000 : t.date < now);
       return mS && mSt && mCx && mD;
     });
-    const cont  = document.getElementById('task-list-cont');
-    const empty = document.getElementById('task-empty');
     if (filtered.length) { cont.innerHTML = buildTaskListHTML(filtered); cont.classList.remove('hidden'); empty.classList.add('hidden'); }
     else { cont.innerHTML = ''; cont.classList.add('hidden'); empty.classList.remove('hidden'); }
     document.querySelectorAll('.dropdown-trigger').forEach(b => {

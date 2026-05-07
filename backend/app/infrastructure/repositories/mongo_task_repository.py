@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
@@ -25,7 +26,8 @@ class MongoTaskRepository(TaskRepository):
             time=doc.get("time", "09:00"),
             duration=doc.get("duration", "1 год"),
             created_at=doc.get("created_at", datetime.now(timezone.utc)),
-            updated_at=doc.get("updated_at", datetime.now(timezone.utc)),
+            updated_at=doc.get("updated_at"),
+            completed_at=doc.get("completed_at"),
         )
 
     def _to_doc(self, task: Task) -> dict:
@@ -42,6 +44,7 @@ class MongoTaskRepository(TaskRepository):
             "duration": task.duration,
             "created_at": task.created_at,
             "updated_at": task.updated_at,
+            "completed_at": task.completed_at,
         }
 
     async def get_all_by_user(self, user_id: str) -> list[Task]:
@@ -52,10 +55,11 @@ class MongoTaskRepository(TaskRepository):
         try:
             doc = await self.col.find_one({
                 "_id": ObjectId(task_id),
-                "user_id": user_id,   # ← захист: чужу задачу не знайде
+                "user_id": user_id,
             })
         except Exception:
             return None
+
         return self._to_domain(doc) if doc else None
 
     async def save(self, task: Task) -> Task:
@@ -65,7 +69,6 @@ class MongoTaskRepository(TaskRepository):
         return task
 
     async def update(self, task: Task) -> Task:
-        task.updated_at = datetime.now(timezone.utc)
         await self.col.update_one(
             {"_id": ObjectId(task.id), "user_id": task.user_id},
             {"$set": self._to_doc(task)},
@@ -76,7 +79,7 @@ class MongoTaskRepository(TaskRepository):
         try:
             result = await self.col.delete_one({
                 "_id": ObjectId(task_id),
-                "user_id": user_id,   # ← чужу задачу не видалить
+                "user_id": user_id,
             })
             return result.deleted_count > 0
         except Exception:
