@@ -12,6 +12,7 @@ from fastapi.responses import JSONResponse
 from app.core.exceptions import AppError, AlreadyExistsError, NotFoundError, AuthenticationError
 
 from app.api.v1.routes.auth_routes import router as auth_router
+from app.api.v1.routes.task_routes import router as task_router
 
 
 @asynccontextmanager
@@ -41,6 +42,7 @@ def create_app() -> FastAPI:
 
     app.include_router(health_router, prefix="/api/v1")
     app.include_router(auth_router, prefix="/api/v1")
+    app.include_router(task_router, prefix="/api/v1")
 
     @app.exception_handler(AlreadyExistsError)
     async def already_exists_handler(request: Request, exc: AlreadyExistsError):

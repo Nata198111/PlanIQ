@@ -16,7 +16,10 @@ async function request(method, path, body = null) {
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
   const config = { method, headers };
-  if (body) config.body = JSON.stringify(body);
+
+  if (body !== null) {
+    config.body = JSON.stringify(body);
+  }
 
   const response = await fetch(`${BASE_URL}${path}`, config);
 
@@ -26,18 +29,28 @@ async function request(method, path, body = null) {
     throw new Error('Unauthorized');
   }
 
-  const data = await response.json();
+  let data = null;
+
+  const text = await response.text();
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = null;
+    }
+  }
 
   if (!response.ok) {
-    throw new Error(data.detail || 'Помилка запиту');
+    throw new Error(data?.detail || 'Помилка запиту');
   }
 
   return data;
 }
 
 export const api = {
-  get:    (path)        => request('GET',    path),
-  post:   (path, body)  => request('POST',   path, body),
-  put:    (path, body)  => request('PUT',    path, body),
-  delete: (path)        => request('DELETE', path),
+  get:    (path)       => request('GET', path),
+  post:   (path, body) => request('POST', path, body),
+  patch:  (path, body) => request('PATCH', path, body),
+  put:    (path, body) => request('PUT', path, body),
+  delete: (path)       => request('DELETE', path),
 };
