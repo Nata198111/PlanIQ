@@ -237,6 +237,7 @@ export function renderDashboard() {
 }
 
 export async function initDashboard() {
+  
   // ── 1. DOM елементи ────────────────────────────────────────
   const timerEl    = document.getElementById('focus-timer');
   const timerMini  = document.getElementById('focus-timer-mini');
@@ -269,6 +270,11 @@ export async function initDashboard() {
 
   // ── 3. Функція оновлення UI ────────────────────────────────
   const refreshDashboard = () => {
+    const dashboardRoot = document.getElementById('focus-section');
+
+    if (!dashboardRoot) {
+      return;
+    }
     const focusTask = getFocusTask();
     ds.curFocusId = focusTask.id;
 
@@ -337,10 +343,32 @@ export async function initDashboard() {
     if (moreBtn && dropdown) moreBtn.onclick = (e) => { e.stopPropagation(); dropdown.classList.toggle('hidden'); };
     document.addEventListener('click', (e) => { if (dropdown && !dropdown.contains(e.target)) dropdown.classList.add('hidden'); });
 
-    document.getElementById('dd-edit').onclick   = () => { dropdown.classList.add('hidden'); openDrawer(ds.curFocusId, true); };
-    document.getElementById('dd-pause').onclick  = () => { ds.paused = !ds.paused; toast(ds.paused ? 'Таймер зупинено' : 'Таймер відновлено'); dropdown.classList.add('hidden'); };
-    document.getElementById('dd-cancel').onclick = () => { ds.stopped = true; toast('Фокус скасовано'); dropdown.classList.add('hidden'); };
+    const ddEdit = document.getElementById('dd-edit');
+    const ddPause = document.getElementById('dd-pause');
+    const ddCancel = document.getElementById('dd-cancel');
 
+    if (ddEdit) {
+      ddEdit.onclick = () => {
+        dropdown.classList.add('hidden');
+        openDrawer(ds.curFocusId, true);
+      };
+    }
+
+    if (ddPause) {
+      ddPause.onclick = () => {
+        ds.paused = !ds.paused;
+        toast(ds.paused ? 'Таймер зупинено' : 'Таймер відновлено');
+        dropdown.classList.add('hidden');
+      };
+    }
+
+    if (ddCancel) {
+      ddCancel.onclick = () => {
+        ds.stopped = true;
+        toast('Фокус скасовано');
+        dropdown.classList.add('hidden');
+      };
+    }
     if (doneBtn) doneBtn.onclick = async () => {
   if (!ds.curFocusId || ds.curFocusId === 'none') {
     toast('Немає активної задачі', 'info');
@@ -423,6 +451,10 @@ export async function initDashboard() {
 
   // ── 6. Підписуємось на оновлення ПЕРЕД завантаженням ───────
   window.addEventListener('task-store-update', refreshDashboard);
+
+  registerCleanup(() => {
+    window.removeEventListener('task-store-update', refreshDashboard);
+  });
 
   // ── 7. Завантажуємо задачі з API ───────────────────────────
   try {
