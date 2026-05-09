@@ -1,6 +1,7 @@
 import { renderFooter } from '../components/footer.js';
 import { loginAPI } from '../services/auth.js';
 import { toast } from '../services/toast.js';
+import { preferencesStore } from '../services/preferences-store.js';
 
 export function renderLogin() {
   return `
@@ -100,6 +101,7 @@ export function initLogin() {
 
       try {
         await loginAPI(email, password);
+        await preferencesStore.load();
         toast('Вхід виконано успішно!', 'success');
         setTimeout(() => { window.location.hash = '#/dashboard'; }, 400);
       } catch (err) {

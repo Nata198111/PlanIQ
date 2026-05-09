@@ -1,4 +1,5 @@
 import { toast } from '../services/toast.js';
+import { preferencesStore } from '../services/preferences-store.js';
 
 export function renderOnboarding() {
   return `
@@ -207,6 +208,8 @@ function buildScheduleGrid() {
     grid.appendChild(timeDiv);
     for (let d = 0; d < 7; d++) {
       const cell = document.createElement('div');
+      cell.dataset.hour = String(h);
+      cell.dataset.day = String(d);
       const isActive = (h >= 9 && h <= 18 && d < 5);
       cell.className = `grid-cell rounded-md cursor-pointer ${isActive ? 'active bg-[#8781ff]/80 border border-[#c4c0ff]/20' : 'bg-[#252540] hover:bg-[#2f2f50]'}`;
       cell.addEventListener('click', () => {
@@ -224,27 +227,27 @@ function buildScheduleGrid() {
 export function initOnboarding() {
   let currentStep = 1;
   const stepContent = document.getElementById('onb-step-content');
-  const stepLabel = document.getElementById('onb-step-label');
+  const stepLabel   = document.getElementById('onb-step-label');
   const bar1 = document.getElementById('onb-bar-1');
   const bar2 = document.getElementById('onb-bar-2');
   const bar3 = document.getElementById('onb-bar-3');
   const backBtn = document.getElementById('onb-back');
   const skipBtn = document.getElementById('onb-skip');
   const nextBtn = document.getElementById('onb-next');
-
+ 
   function showStep(step) {
     currentStep = step;
     stepLabel.textContent = `Крок ${step} з 3`;
-
-    const activeClass = 'bg-[#8781ff] rounded-full shadow-[0_0_8px_rgba(108,99,255,0.4)]';
+ 
+    const activeClass   = 'bg-[#8781ff] rounded-full shadow-[0_0_8px_rgba(108,99,255,0.4)]';
     const inactiveClass = 'bg-[#343440] rounded-full';
-
+ 
     [bar1, bar2, bar3].forEach((bar, i) => {
       bar.className = `flex-1 ${i < step ? activeClass : inactiveClass}`;
     });
-
+ 
     backBtn.classList.toggle('hidden', step === 1);
-
+ 
     if (step === 3) {
       nextBtn.innerHTML = 'Завершити налаштування <span class="material-symbols-outlined text-sm">check_circle</span>';
       nextBtn.className = 'bg-[#4CAF82] hover:bg-[#45a076] text-white px-8 py-3.5 rounded-full font-bold flex items-center gap-2 shadow-lg shadow-[#4CAF82]/20 transition-all hover:translate-y-[-2px] active:scale-95';
@@ -252,7 +255,7 @@ export function initOnboarding() {
       nextBtn.innerHTML = 'Далі <span class="material-symbols-outlined text-sm">arrow_forward</span>';
       nextBtn.className = 'bg-[#c4c0ff] hover:bg-[#e3dfff] text-[#1b0091] font-bold px-8 py-3 rounded-full flex items-center gap-2 transition-all active:scale-95 shadow-lg shadow-[#c4c0ff]/10';
     }
-
+ 
     if (step === 1) {
       stepContent.innerHTML = renderStep1();
       buildScheduleGrid();
@@ -263,7 +266,7 @@ export function initOnboarding() {
       stepContent.innerHTML = renderStep3();
     }
   }
-
+ 
   function initCategoryGrid() {
     document.querySelectorAll('.category-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -275,23 +278,91 @@ export function initOnboarding() {
       });
     });
   }
+ 
+  // ── Збір даних зі сторінок ─────────────────────────────────────
+ 
+  function collectWorkHours() {
+    const activeCells = document.querySelectorAll('.grid-cell.active');
+    if (!activeCells.length) return { start: '09:00', end: '18:00' };
 
-  nextBtn.addEventListener('click', () => {
+    const hours = [...activeCells]
+      .map(c => parseInt(c.dataset.hour))
+      .filter(h => !Number.isNaN(h));
+
+    if (!hours.length) return { start: '09:00', end: '18:00' };
+
+    const minH = Math.min(...hours);
+    const maxH = Math.max(...hours);
+
+    return {
+      start: `${String(minH).padStart(2, '0')}:00`,
+      end: `${String(Math.min(maxH + 1, 24)).padStart(2, '0')}:00`,
+    };
+  }
+ 
+  function collectWorkDays() {
+    // Активні клітинки містять data-day (0=Пн...6=Нд) якщо є,
+    // або рахуємо за колонками. Дефолт — [0,1,2,3,4]
+    const activeCells = document.querySelectorAll('.grid-cell.active');
+    if (!activeCells.length) return [0,1,2,3,4];
+ 
+    const days = new Set();
+    activeCells.forEach(c => {
+      if (c.dataset.day !== undefined) {
+        days.add(parseInt(c.dataset.day));
+      }
+    });
+    return days.size > 0 ? [...days].sort() : [0,1,2,3,4];
+  }
+ 
+  function collectCategories() {
+    const selected = [...document.querySelectorAll('.category-btn.selected')]
+      .map(b => (b.dataset.cat || '').toUpperCase())
+      .filter(Boolean);
+    return selected.length > 0 ? selected : ['PERSONAL'];
+  }
+ 
+  // ── Кнопки ────────────────────────────────────────────────────
+ 
+  nextBtn.addEventListener('click', async () => {
     if (currentStep < 3) {
       showStep(currentStep + 1);
-    } else {
-      toast('Налаштування завершено! Ласкаво просимо!', 'success');
+      return;
+    }
+ 
+    // Крок 3 — збираємо все і зберігаємо
+    nextBtn.disabled = true;
+    nextBtn.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">progress_activity</span> Зберігаємо...';
+ 
+    try {
+      const payload = {
+        work_hours:          collectWorkHours(),
+        work_days:           collectWorkDays(),
+        selected_categories: collectCategories(),
+        // Пікові години — беремо дефолт, юзер зможе змінити в Settings
+        peak_hours: ['09:00', '10:00', '11:00'],
+      };
+ 
+      await preferencesStore.put(payload);
+ 
+      toast('Налаштування збережено! Ласкаво просимо! 🎉', 'success');
       setTimeout(() => { window.location.hash = '#/dashboard'; }, 400);
+    } catch (err) {
+      console.error('Onboarding save error:', err);
+      toast('Не вдалося зберегти, але продовжуємо', 'info');
+      setTimeout(() => { window.location.hash = '#/dashboard'; }, 400);
+    } finally {
+      nextBtn.disabled = false;
     }
   });
-
+ 
   backBtn.addEventListener('click', () => {
     if (currentStep > 1) showStep(currentStep - 1);
   });
-
+ 
   skipBtn.addEventListener('click', () => {
     window.location.hash = '#/dashboard';
   });
-
+ 
   showStep(1);
 }

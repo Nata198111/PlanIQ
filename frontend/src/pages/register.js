@@ -1,5 +1,6 @@
 import { registerAPI } from '../services/auth.js';
 import { toast } from '../services/toast.js';
+import { preferencesStore } from '../services/preferences-store.js';
 
 export function renderRegister() {
   return `
@@ -151,6 +152,7 @@ export function initRegister() {
 
       try {
         await registerAPI(name, email, password);
+        await preferencesStore.load();
         toast('Реєстрація успішна!', 'success');
         setTimeout(() => { window.location.hash = '#/onboarding'; }, 400);
       } catch (err) {

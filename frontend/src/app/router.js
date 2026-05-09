@@ -14,6 +14,7 @@ import { renderProfile, initProfile } from '../pages/profile.js';
 import { isLoggedIn, clearAuth } from '../services/auth.js';
 import { toast } from '../services/toast.js';
 import { runCleanups } from '../utils/cleanup.js';
+import { preferencesStore } from '../services/preferences-store.js';
 
 const routes = {
   '/landing':    { layout: 'public', render: renderLanding,    init: null,           title: 'ПланІQ — Когнітивне Святилище' },
@@ -146,6 +147,7 @@ function initGlobalActions() {
     logoutBtn.addEventListener('click', (e) => {
       e.preventDefault();
       clearAuth();
+      preferencesStore.clear();
       toast('Ви вийшли з системи', 'info');
       setTimeout(() => { window.location.hash = '#/landing'; }, 300);
     });
@@ -170,6 +172,9 @@ function initGlobalActions() {
 
 window.addEventListener('hashchange', navigate);
 window.addEventListener('DOMContentLoaded', () => {
+  if (isLoggedIn()) {
+    preferencesStore.load();
+  }
   if (!window.location.hash) {
     window.location.hash = '#/landing';
   } else {

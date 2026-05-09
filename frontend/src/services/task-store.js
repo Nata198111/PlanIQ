@@ -1,62 +1,43 @@
+// frontend/src/services/task-store.js
 import { taskApi } from './task-api.js';
+import { preferencesStore, DEFAULT_CATEGORIES } from './preferences-store.js';
 
-export const DEFAULT_CATEGORIES = {
-  'UNIVERSITY': { label: 'УНІВЕРСИТЕТ', color: '#4ddada' },
-  'WORK':       { label: 'РОБОТА',      color: '#8781ff' },
-  'PERSONAL':   { label: 'ОСОБИСТЕ',   color: '#464555' },
-  'HOBBY':      { label: 'ХОБІ',        color: '#c4c0ff' },
-  'HEALTH':     { label: "ЗДОРОВʼЯ",   color: '#4CAF82' },
-  'HOME':       { label: 'ПОБУТ',       color: '#EF9F27' },
-  'PROJECTS':   { label: 'ПРОЄКТИ',     color: '#818cf8' },
-  'OTHER':      { label: 'ІНШЕ',        color: '#888780' },
-};
-
-const COLOR_PALETTE = ['#4ddada', '#8781ff', '#c4c0ff', '#818cf8', '#ffb4ab', '#3ecfcf', '#6c63ff'];
+// Re-export для зворотної сумісності — pages що робили
+// import { DEFAULT_CATEGORIES } from '../services/task-store.js' продовжують працювати
+export { DEFAULT_CATEGORIES };
 
 class TaskStore {
   constructor() {
-    this._tasks = [];
-    this._categories = this._loadCustomCategories();
+    this._tasks  = [];
     this._loaded = false;
   }
 
-  // ── Категорії ─────────────────────────────────────────────
+  // ── Категорії — тепер делегуємо в preferencesStore ───────────
 
-  _loadCustomCategories() {
-    try {
-      const custom = JSON.parse(localStorage.getItem('PlaniQ_Custom_Cats') || '{}');
-      return { ...DEFAULT_CATEGORIES, ...custom };
-    } catch { return { ...DEFAULT_CATEGORIES }; }
+  getCategories() {
+    return preferencesStore.getCategories();
   }
 
-  getCategories() { return this._categories; }
-
+  /**
+   * Додає категорію через preferencesStore (зберігає в preferences на бекенді).
+   * Повертає Promise<catId> — форма має чекати на результат.
+   */
   addCategory(name) {
-    const id = name.toUpperCase().replace(/\s+/g, '_');
-    if (this._categories[id]) return id;
-    const color = COLOR_PALETTE[Object.keys(this._categories).length % COLOR_PALETTE.length];
-    this._categories[id] = { label: name.toUpperCase(), color };
-    const custom = {};
-    Object.keys(this._categories).forEach(k => {
-      if (!DEFAULT_CATEGORIES[k]) custom[k] = this._categories[k];
-    });
-    localStorage.setItem('PlaniQ_Custom_Cats', JSON.stringify(custom));
-    window.dispatchEvent(new CustomEvent('categories-update'));
-    return id;
+    return preferencesStore.addCategory(name);
   }
 
-  // ── Локальний кеш ─────────────────────────────────────────
+  // ── Локальний кеш ──────────────────────────────────────────────
 
   _notify() {
     window.dispatchEvent(new CustomEvent('task-store-update'));
   }
 
-  // ── API методи (async) ────────────────────────────────────
+  // ── API методи ────────────────────────────────────────────────
 
   async loadFromAPI() {
     try {
-      const tasks = await taskApi.getAll();
-      this._tasks = tasks;
+      const tasks  = await taskApi.getAll();
+      this._tasks  = tasks;
       this._loaded = true;
       this._notify();
       return tasks;
@@ -75,7 +56,7 @@ class TaskStore {
 
   async updateTask(id, updates) {
     const task = await taskApi.update(id, updates);
-    const idx = this._tasks.findIndex(t => t.id === id);
+    const idx  = this._tasks.findIndex(t => t.id === id);
     if (idx !== -1) this._tasks[idx] = task;
     this._notify();
     return task;
@@ -87,12 +68,30 @@ class TaskStore {
     this._notify();
   }
 
-  // ── Синхронні геттери (для сумісності з існуючим кодом) ──
+  // ── Синхронні геттери ──────────────────────────────────────────
 
-  getAll()      { return this._tasks; }
-  getById(id)   { return this._tasks.find(t => t.id === id) || null; }
-  isLoaded()    { return this._loaded; }
+  getAll()    { return this._tasks; }
+  getById(id) { return this._tasks.find(t => t.id === id) || null; }
+  isLoaded()  { return this._loaded; }
 }
 
 export const taskStore = new TaskStore();
-export const CATEGORIES = taskStore.getCategories();
+
+// CATEGORIES — живий проксі: завжди повертає актуальні категорії
+// (використовується як `CATEGORIES[catId]` в tasks.js, calendar.js і т.д.)
+export const CATEGORIES = new Proxy({}, {
+  get(_, prop) {
+    return taskStore.getCategories()[prop];
+  },
+  ownKeys() {
+    return Object.keys(taskStore.getCategories());
+  },
+  has(_, prop) {
+    return prop in taskStore.getCategories();
+  },
+  getOwnPropertyDescriptor(_, prop) {
+    const cats = taskStore.getCategories();
+    if (prop in cats) return { value: cats[prop], enumerable: true, configurable: true, writable: false };
+    return undefined;
+  },
+});
