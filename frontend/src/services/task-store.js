@@ -1,9 +1,8 @@
 // frontend/src/services/task-store.js
 import { taskApi } from './task-api.js';
 import { preferencesStore, DEFAULT_CATEGORIES } from './preferences-store.js';
+import { notificationsStore } from './notifications-store.js';
 
-// Re-export для зворотної сумісності — pages що робили
-// import { DEFAULT_CATEGORIES } from '../services/task-store.js' продовжують працювати
 export { DEFAULT_CATEGORIES };
 
 class TaskStore {
@@ -32,6 +31,12 @@ class TaskStore {
     window.dispatchEvent(new CustomEvent('task-store-update'));
   }
 
+  _refreshNotifications() {
+    notificationsStore.load().catch(err => {
+      console.warn('Failed to refresh notifications:', err);
+    });
+  }
+
   // ── API методи ────────────────────────────────────────────────
 
   async loadFromAPI() {
@@ -51,6 +56,7 @@ class TaskStore {
     const task = await taskApi.create(data);
     this._tasks.push(task);
     this._notify();
+    this._refreshNotifications();
     return task;
   }
 
@@ -59,6 +65,7 @@ class TaskStore {
     const idx  = this._tasks.findIndex(t => t.id === id);
     if (idx !== -1) this._tasks[idx] = task;
     this._notify();
+    this._refreshNotifications();
     return task;
   }
 
@@ -66,6 +73,7 @@ class TaskStore {
     await taskApi.delete(id);
     this._tasks = this._tasks.filter(t => t.id !== id);
     this._notify();
+    this._refreshNotifications();
   }
 
   // ── Синхронні геттери ──────────────────────────────────────────

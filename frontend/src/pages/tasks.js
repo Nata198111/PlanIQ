@@ -61,12 +61,48 @@ function renderGroup(lbl, lCls, cCls, items) {
   return `<section class="mb-12"><div class="flex items-center gap-3 mb-6"><h3 class="text-xl font-bold tracking-tight ${lCls}">${lbl}</h3><span class="px-2 py-0.5 rounded-full ${cCls} text-[10px] font-bold font-mono">${items.length} ${w}</span></div><div class="space-y-3">${items.map(renderItem).join('')}</div></section>`;
 }
 
+function getTaskDateTime(task) {
+  if (!task.date) return null;
+
+  const time = task.time || '23:59';
+  const dateTime = new Date(`${task.date}T${time}`);
+
+  if (Number.isNaN(dateTime.getTime())) {
+    return null;
+  }
+
+  return dateTime;
+}
+
+function isTaskOverdue(task) {
+  if (task.status === 'Виконано') return false;
+
+  const taskDateTime = getTaskDateTime(task);
+  if (!taskDateTime) return false;
+
+  return taskDateTime < new Date();
+}
+
+function isTaskToday(task) {
+  return task.date === getLocalDateKey();
+}
+
+function isTaskFuture(task) {
+  if (task.status === 'Виконано') return false;
+
+  const taskDateTime = getTaskDateTime(task);
+  if (!taskDateTime) return false;
+
+  return taskDateTime >= new Date() && !isTaskToday(task);
+}
+
 function buildTaskListHTML(tasks) {
-  const now = getLocalDateKey();
-  return renderGroup('Сьогодні',    '',             'bg-[#c4c0ff]/10 text-[#c4c0ff]',    tasks.filter(t => t.date === now && t.status !== 'Виконано')) +
-         renderGroup('Прострочені', 'text-[#ffb4ab]','bg-[#93000a]/30 text-[#ffb4ab]',   tasks.filter(t => t.date < now  && t.status !== 'Виконано')) +
-         renderGroup('Інші задачі', 'opacity-60',   'bg-[#343440] text-slate-400',       tasks.filter(t => t.date > now  && t.status !== 'Виконано')) +
-         renderGroup('Виконані',    'opacity-40',   'bg-[#343440] text-slate-500',       tasks.filter(t => t.status === 'Виконано'));
+  return (
+    renderGroup( 'Сьогодні', '',                  'bg-[#c4c0ff]/10 text-[#c4c0ff]', tasks.filter(t => isTaskToday(t) && !isTaskOverdue(t) && t.status !== 'Виконано' )) +
+    renderGroup( 'Прострочені', 'text-[#ffb4ab]', 'bg-[#93000a]/30 text-[#ffb4ab]', tasks.filter(t => isTaskOverdue(t) )) +
+    renderGroup( 'Інші задачі', 'opacity-60',     'bg-[#343440] text-slate-400', tasks.filter(t => !isTaskToday(t) && !isTaskOverdue(t) && t.status !== 'Виконано' )) +
+    renderGroup( 'Виконані',    'opacity-40',     'bg-[#343440] text-slate-500', tasks.filter(t => t.status === 'Виконано' ))
+  );
 }
 
 export function renderTasks() {
@@ -139,14 +175,18 @@ export async function initTasks() {
     if (!cont || !empty) {
       return;
     }
-    const now = getLocalDateKey();
     const filtered = taskStore.getAll().filter(t => {
+      const taskDateTime = getTaskDateTime(t);
+      const nowDateTime = new Date();
+
       const mS  = t.title.toLowerCase().includes(query) || (CATEGORIES[t.category]?.label || '').toLowerCase().includes(query);
       const mSt = filters.status === 'all' || t.status === filters.status;
       const mCx = filters.complexity === 'all' || (filters.complexity === 'high' ? t.complexity >= 7 : filters.complexity === 'mid' ? (t.complexity >= 4 && t.complexity <= 6) : t.complexity <= 3);
-      const mD  = filters.deadline === 'all' || (filters.deadline === 'today' ? t.date === now : filters.deadline === 'week' ? (new Date(t.date) - new Date(now)) < 7 * 86400000 : t.date < now);
+      const mD  = filters.deadline === 'all' || (filters.deadline === 'today' ? isTaskToday(t) : filters.deadline === 'week' ? taskDateTime && taskDateTime >= nowDateTime && taskDateTime < new Date(nowDateTime.getTime() + 7 * 86400000) : isTaskOverdue(t));
+
       return mS && mSt && mCx && mD;
     });
+    
     if (filtered.length) { cont.innerHTML = buildTaskListHTML(filtered); cont.classList.remove('hidden'); empty.classList.add('hidden'); }
     else { cont.innerHTML = ''; cont.classList.add('hidden'); empty.classList.remove('hidden'); }
     document.querySelectorAll('.dropdown-trigger').forEach(b => {

@@ -15,19 +15,21 @@ import { isLoggedIn, clearAuth } from '../services/auth.js';
 import { toast } from '../services/toast.js';
 import { runCleanups } from '../utils/cleanup.js';
 import { preferencesStore } from '../services/preferences-store.js';
+import { notificationsStore } from '../services/notifications-store.js';
+import { updateTopbarBadge } from '../components/topbar.js';
 
 const routes = {
-  '/landing':    { layout: 'public', render: renderLanding,    init: null,           title: 'ПланІQ — Когнітивне Святилище' },
-  '/login':      { layout: 'auth',   render: renderLogin,      init: initLogin,      title: 'ПланІQ — Вхід' },
-  '/register':   { layout: 'auth',   render: renderRegister,   init: initRegister,   title: 'ПланІQ — Реєстрація' },
-  '/onboarding': { layout: 'auth',   render: renderOnboarding, init: initOnboarding, title: 'ПланІQ — Налаштування', protected: true },
-  '/dashboard':  { layout: 'app',    render: renderDashboard,  init: initDashboard,  title: 'ПланІQ — Головна',       navId: 'dashboard', topbarTitle: 'Головна',       protected: true },
-  '/tasks':      { layout: 'app',    render: renderTasks,      init: initTasks,      title: 'ПланІQ — Мої задачі',    navId: 'tasks',     topbarTitle: 'Мої задачі',    protected: true },
-  '/calendar':   { layout: 'app',    render: renderCalendar,   init: initCalendar,   title: 'ПланІQ — Календар',      navId: 'calendar',  topbarTitle: 'Календар',      protected: true },
-  '/analytics':  { layout: 'app',    render: renderAnalytics,  init: initAnalytics,  title: 'ПланІQ — Аналітика',     navId: 'analytics', topbarTitle: 'Аналітика',     showSearch: true, protected: true },
-  '/settings':   { layout: 'app',    render: renderSettings,   init: initSettings,   title: 'ПланІQ — Налаштування',  navId: 'settings',  topbarTitle: 'Налаштування',  showNewTask: false, protected: true },
-  '/notifications':{ layout: 'app',  render: renderNotifications,init: initNotifications,title: 'ПланІQ — Сповіщення',navId: 'notifications',topbarTitle: 'Сповіщення',   protected: true },
-  '/profile':    { layout: 'app',    render: renderProfile,    init: initProfile,    title: 'ПланІQ — Профіль',       navId: 'profile',   topbarTitle: 'Профіль користувача', protected: true },
+  '/landing':      { layout: 'public', render: renderLanding,       init: null,              title: 'ПланІQ — Когнітивне Святилище' },
+  '/login':        { layout: 'auth',   render: renderLogin,         init: initLogin,         title: 'ПланІQ — Вхід' },
+  '/register':     { layout: 'auth',   render: renderRegister,      init: initRegister,      title: 'ПланІQ — Реєстрація' },
+  '/onboarding':   { layout: 'auth',   render: renderOnboarding,    init: initOnboarding,    title: 'ПланІQ — Налаштування', protected: true },
+  '/dashboard':    { layout: 'app',    render: renderDashboard,     init: initDashboard,     title: 'ПланІQ — Головна',      navId: 'dashboard', topbarTitle: 'Головна',                protected: true },
+  '/tasks':        { layout: 'app',    render: renderTasks,         init: initTasks,         title: 'ПланІQ — Мої задачі',   navId: 'tasks',     topbarTitle: 'Мої задачі',             protected: true },
+  '/calendar':     { layout: 'app',    render: renderCalendar,      init: initCalendar,      title: 'ПланІQ — Календар',     navId: 'calendar',  topbarTitle: 'Календар',               protected: true },
+  '/analytics':    { layout: 'app',    render: renderAnalytics,     init: initAnalytics,     title: 'ПланІQ — Аналітика',    navId: 'analytics', topbarTitle: 'Аналітика',    showSearch: true, protected: true },
+  '/settings':     { layout: 'app',    render: renderSettings,      init: initSettings,      title: 'ПланІQ — Налаштування', navId: 'settings',  topbarTitle: 'Налаштування', showNewTask: false, protected: true },
+  '/notifications':{ layout: 'app',    render: renderNotifications, init: initNotifications, title: 'ПланІQ — Сповіщення',   navId: 'notifications', topbarTitle: 'Сповіщення', protected: true },
+  '/profile':      { layout: 'app',    render: renderProfile,       init: initProfile,       title: 'ПланІQ — Профіль',      navId: 'profile',   topbarTitle: 'Профіль користувача',    protected: true },
 };
 
 function getRoute() {
@@ -35,7 +37,7 @@ function getRoute() {
 }
 
 function navigate() {
-  const path = getRoute();
+  const path  = getRoute();
   const route = routes[path];
 
   if (!route) {
@@ -65,17 +67,20 @@ function navigate() {
     if (route.layout === 'app') {
       const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
       const marginClass = isCollapsed ? 'lg:ml-[80px]' : 'lg:ml-[240px]';
-      
+
       app.innerHTML = `
-        ${renderSidebar(route.navId, isCollapsed)}
+        ${renderSidebar(route.navId, isCollapsed, notificationsStore.unreadCount())}
         <div class="w-full lg:w-auto ${marginClass} min-h-screen flex flex-col transition-all duration-300" id="main-content-wrapper">
           ${renderTopbar(route.topbarTitle, {
             showSearch: route.showSearch || false,
-            showNewTask: route.showNewTask !== false
+            showNewTask: route.showNewTask !== false,
           })}
           <main class="flex-1 p-4 md:p-8 overflow-x-hidden">${route.render()}</main>
         </div>
       `;
+
+      // Одразу оновлюємо badge в topbar після рендеру
+      updateTopbarBadge(notificationsStore.unreadCount());
     } else {
       app.innerHTML = route.render();
     }
@@ -90,21 +95,21 @@ function navigate() {
 }
 
 function initGlobalActions() {
-  const sidebar = document.getElementById('sidebar');
+  const sidebar     = document.getElementById('sidebar');
   const mainWrapper = document.getElementById('main-content-wrapper');
-  const overlay = document.getElementById('mobile-sidebar-overlay');
-  
+  const overlay     = document.getElementById('mobile-sidebar-overlay');
+
   const toggleMobileSidebar = (forceClose = false) => {
     if (!sidebar || !overlay) return;
     const isClosed = sidebar.classList.contains('-translate-x-full');
-    if(isClosed && !forceClose) {
-       sidebar.classList.remove('-translate-x-full');
-       overlay.classList.remove('hidden');
-       setTimeout(() => overlay.classList.remove('opacity-0'), 10);
+    if (isClosed && !forceClose) {
+      sidebar.classList.remove('-translate-x-full');
+      overlay.classList.remove('hidden');
+      setTimeout(() => overlay.classList.remove('opacity-0'), 10);
     } else {
-       sidebar.classList.add('-translate-x-full');
-       overlay.classList.add('opacity-0');
-       setTimeout(() => overlay.classList.add('hidden'), 300);
+      sidebar.classList.add('-translate-x-full');
+      overlay.classList.add('opacity-0');
+      setTimeout(() => overlay.classList.add('hidden'), 300);
     }
   };
 
@@ -113,7 +118,7 @@ function initGlobalActions() {
 
   const mobileCloseBtn = document.getElementById('mobile-sidebar-close');
   if (mobileCloseBtn) mobileCloseBtn.addEventListener('click', () => toggleMobileSidebar(true));
-  
+
   if (overlay) overlay.addEventListener('click', () => toggleMobileSidebar(true));
 
   const collapseBtn = document.getElementById('sidebar-collapse-btn');
@@ -121,23 +126,24 @@ function initGlobalActions() {
     collapseBtn.addEventListener('click', () => {
       const isNowCollapsed = localStorage.getItem('sidebarCollapsed') !== 'true';
       localStorage.setItem('sidebarCollapsed', isNowCollapsed);
-      
-      const path = getRoute();
+
+      const path  = getRoute();
       const route = routes[path];
-      
-      const newSidebarStr = renderSidebar(route.navId, isNowCollapsed);
-      const tempWrapper = document.createElement('div');
+
+      // Передаємо unreadCount щоб badge залишився після collapse
+      const newSidebarStr = renderSidebar(route.navId, isNowCollapsed, notificationsStore.unreadCount());
+      const tempWrapper   = document.createElement('div');
       tempWrapper.innerHTML = newSidebarStr;
-      
+
       const newSidebarNode = tempWrapper.querySelector('#sidebar');
       sidebar.parentNode.replaceChild(newSidebarNode, sidebar);
-      
+
       if (isNowCollapsed) {
         mainWrapper.classList.replace('lg:ml-[240px]', 'lg:ml-[80px]');
       } else {
         mainWrapper.classList.replace('lg:ml-[80px]', 'lg:ml-[240px]');
       }
-      
+
       initGlobalActions();
     });
   }
@@ -147,7 +153,7 @@ function initGlobalActions() {
     logoutBtn.addEventListener('click', (e) => {
       e.preventDefault();
       clearAuth();
-      preferencesStore.clear();
+      preferencesStore.clear?.();
       toast('Ви вийшли з системи', 'info');
       setTimeout(() => { window.location.hash = '#/landing'; }, 300);
     });
@@ -161,20 +167,46 @@ function initGlobalActions() {
       setTimeout(() => {
         const btn = document.getElementById('topbar-new-task');
         if (btn && typeof btn.onclick === 'function') {
-            btn.onclick();
+          btn.onclick();
         } else if (btn) {
-            btn.click();
+          btn.click();
         }
       }, 150);
     });
   }
 }
 
+// ── Badge: оновлюємо topbar і sidebar-badge без перерендеру ───────
+window.addEventListener('notifications-update', (e) => {
+  const count = e.detail?.unread ?? 0;
+
+  // Topbar badge
+  updateTopbarBadge(count);
+
+  // Sidebar badge — оновлюємо текст без перерендеру всього sidebar
+  const sidebarBadge = document.getElementById('notif-badge-sidebar');
+  if (sidebarBadge) {
+    if (count > 0) {
+      sidebarBadge.textContent = count > 99 ? '99+' : String(count);
+      sidebarBadge.classList.remove('hidden');
+    } else {
+      sidebarBadge.classList.add('hidden');
+    }
+  }
+});
+
+// ── Старт ─────────────────────────────────────────────────────────
 window.addEventListener('hashchange', navigate);
+
 window.addEventListener('DOMContentLoaded', () => {
   if (isLoggedIn()) {
-    preferencesStore.load();
+    // Завантажуємо preferences і notifications паралельно
+    Promise.all([
+      preferencesStore.load(),
+      notificationsStore.load(),
+    ]);
   }
+
   if (!window.location.hash) {
     window.location.hash = '#/landing';
   } else {
