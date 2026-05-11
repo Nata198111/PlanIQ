@@ -1,7 +1,25 @@
 import { renderAIInsight } from '../components/ai-insight.js';
 import { toast } from '../services/toast.js';
-import { clearAuth } from '../services/auth.js';
+import { getUser, clearAuth, updateProfileAPI, changePasswordAPI } from '../services/auth.js';
 import { preferencesStore } from '../services/preferences-store.js';
+
+function escapeHTML(value = '') {
+  return String(value).replace(/[&<>"']/g, char => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;',
+  }[char]));
+}
+
+function getInitials(name) {
+  return (name || 'Користувач')
+    .split(' ')
+    .slice(0, 2)
+    .map(w => w[0]?.toUpperCase() || '')
+    .join('');
+}
 
 export function renderSettings() {
   return `
@@ -31,38 +49,75 @@ export function renderSettings() {
 }
 
 function profileTab() {
+  const auth = getUser();
+  const user = auth.user || {};
+  const prefs = preferencesStore.get();
+
+  const name = user.name || 'Користувач';
+  const email = user.email || '';
+  const initials = getInitials(name);
+  const timezone = prefs?.timezone || 'Europe/Kyiv';
+
+  const selected = value => timezone === value ? 'selected' : '';
+
   return `
 <section class="bg-[#1f1e2a] p-8 rounded-2xl glow-primary">
-  <h2 class="text-2xl font-bold mb-8 flex items-center gap-3"><span class="w-1.5 h-6 bg-[#c4c0ff] rounded-full"></span>Особисті дані</h2>
+  <h2 class="text-2xl font-bold mb-8 flex items-center gap-3">
+    <span class="w-1.5 h-6 bg-[#c4c0ff] rounded-full"></span>
+    Особисті дані
+  </h2>
+
   <div class="flex flex-col md:flex-row gap-12 items-start">
     <div class="relative group" id="avatar-container">
-      <div class="w-32 h-32 rounded-full overflow-hidden border-4 border-[#292935] relative bg-gradient-to-tr from-[#6C63FF] to-[#3ECFCF] flex items-center justify-center text-4xl font-black text-white hover:brightness-110 transition-all cursor-pointer shadow-xl shadow-black/20" id="avatar-preview">ОП</div>
-      <button class="mt-4 w-full text-center text-[10px] font-mono text-[#918fa1] hover:text-white uppercase tracking-widest transition-colors outline-none cursor-pointer" id="avatar-trigger">Змінити фото</button>
-      
-      <input type="file" id="avatar-upload" class="hidden" accept="image/png, image/jpeg, image/webp" />
-      
-      <div id="avatar-popup" class="absolute left-1/2 -translate-x-1/2 top-[120px] w-48 bg-[#292935] border border-white/10 rounded-xl shadow-xl hidden z-50 overflow-hidden">
-        <button class="w-full text-left px-4 py-3 text-xs font-bold text-white hover:bg-white/10 transition-colors border-b border-white/5 flex items-center gap-2 outline-none" id="btn-upload-photo">
-          <span class="material-symbols-outlined text-[16px]">upload</span> Завантажити
-        </button>
-        <div class="p-3 border-b border-white/5 bg-black/10">
-          <span class="text-[9px] font-mono text-slate-500 uppercase mb-3 block text-center">Стандартні</span>
-          <div class="flex gap-3 justify-center">
-            <button class="w-8 h-8 rounded-full bg-gradient-to-tr from-[#ffb4ab] to-amber-500 hover:scale-110 transition-transform default-avatar-btn shadow-lg outline-none" data-color="from-[#ffb4ab] to-amber-500"></button>
-            <button class="w-8 h-8 rounded-full bg-gradient-to-tr from-[#4ddada] to-emerald-400 hover:scale-110 transition-transform default-avatar-btn shadow-lg outline-none" data-color="from-[#4ddada] to-emerald-400"></button>
-            <button class="w-8 h-8 rounded-full bg-gradient-to-tr from-[#c4c0ff] to-indigo-500 hover:scale-110 transition-transform default-avatar-btn shadow-lg outline-none" data-color="from-[#c4c0ff] to-indigo-500"></button>
-          </div>
+      <div class="w-32 h-32 rounded-full overflow-hidden border-4 border-[#292935] relative bg-gradient-to-tr from-[#6C63FF] to-[#3ECFCF] flex items-center justify-center text-4xl font-black text-white shadow-xl shadow-black/20" id="avatar-preview">
+        ${escapeHTML(initials)}
+      </div>
+      <button class="mt-4 w-full text-center text-[10px] font-mono text-[#918fa1] uppercase tracking-widest cursor-not-allowed opacity-60" type="button">
+        Фото незабаром
+      </button>
+    </div>
+
+    <div class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+      <div class="space-y-2">
+        <label class="text-xs font-bold text-[#918fa1] uppercase tracking-widest ml-1">Ім'я</label>
+        <input
+          id="profile-name"
+          class="w-full bg-[#1b1a26] border-none rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-[#c4c0ff]/20 transition-all outline-none"
+          type="text"
+          value="${escapeHTML(name)}"/>
+      </div>
+
+      <div class="space-y-2">
+        <label class="text-xs font-bold text-[#918fa1] uppercase tracking-widest ml-1">Електронна пошта</label>
+        <input
+          id="profile-email"
+          class="w-full bg-[#1b1a26] border-none rounded-xl px-4 py-3 text-slate-400 outline-none cursor-not-allowed"
+          type="email"
+          value="${escapeHTML(email)}"
+          readonly/>
+      </div>
+
+      <div class="space-y-2 md:col-span-2">
+        <label class="text-xs font-bold text-[#918fa1] uppercase tracking-widest ml-1">Часовий пояс</label>
+        <div class="relative">
+          <select
+            id="profile-timezone"
+            class="w-full bg-[#1b1a26] border-none rounded-xl px-4 py-3 text-white appearance-none focus:ring-2 focus:ring-[#c4c0ff]/20 transition-all outline-none">
+            <option value="Europe/Kyiv" ${selected('Europe/Kyiv')}>UTC+2 / UTC+3 Київ</option>
+            <option value="Europe/Warsaw" ${selected('Europe/Warsaw')}>UTC+1 / UTC+2 Варшава</option>
+            <option value="Europe/London" ${selected('Europe/London')}>UTC+0 / UTC+1 Лондон</option>
+          </select>
+          <span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[#918fa1]">expand_more</span>
         </div>
-        <button class="w-full text-left px-4 py-3 text-xs font-bold text-[#ffb2bc] hover:bg-[#ffb2bc]/10 transition-colors flex items-center gap-2 outline-none" id="btn-remove-photo">
-          <span class="material-symbols-outlined text-[16px]">delete</span> Видалити фото
+      </div>
+
+      <div class="md:col-span-2 pt-4">
+        <button
+          class="bg-[#c4c0ff] text-[#2000a4] px-8 py-3 rounded-full font-bold text-sm hover:shadow-lg hover:shadow-[#c4c0ff]/20 transition-all active:scale-95"
+          id="save-profile">
+          Зберегти зміни
         </button>
       </div>
-    </div>
-    <div class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
-      <div class="space-y-2"><label class="text-xs font-bold text-[#918fa1] uppercase tracking-widest ml-1">Ім'я</label><input class="w-full bg-[#1b1a26] border-none rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-[#c4c0ff]/20 transition-all outline-none" type="text" value="Олександр Петренко"/></div>
-      <div class="space-y-2"><label class="text-xs font-bold text-[#918fa1] uppercase tracking-widest ml-1">Електронна пошта</label><input class="w-full bg-[#1b1a26] border-none rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-[#c4c0ff]/20 transition-all outline-none" type="email" value="alex@example.com"/></div>
-      <div class="space-y-2 md:col-span-2"><label class="text-xs font-bold text-[#918fa1] uppercase tracking-widest ml-1">Часовий пояс</label><div class="relative"><select class="w-full bg-[#1b1a26] border-none rounded-xl px-4 py-3 text-white appearance-none focus:ring-2 focus:ring-[#c4c0ff]/20 transition-all outline-none"><option>UTC+2 Київ</option><option>UTC+1 Варшава</option><option>UTC+0 Лондон</option></select><span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[#918fa1]">expand_more</span></div></div>
-      <div class="md:col-span-2 pt-4"><button class="bg-[#c4c0ff] text-[#2000a4] px-8 py-3 rounded-full font-bold text-sm hover:shadow-lg hover:shadow-[#c4c0ff]/20 transition-all active:scale-95" id="save-profile">Зберегти зміни</button></div>
     </div>
   </div>
 </section>`;
@@ -333,93 +388,170 @@ ${renderAIInsight({
 }
 
 function notificationsTab() {
+  const prefs = preferencesStore.get();
+  const notificationSettings = prefs?.notifications || {};
+
+  const enabled = notificationSettings.enabled ?? prefs?.notifications_enabled ?? true;
+  const deadlineSoon = notificationSettings.deadline_soon ?? true;
+  const taskOverdue = notificationSettings.task_overdue ?? true;
+  const rescheduled = notificationSettings.rescheduled ?? true;
+  const planningDone = notificationSettings.planning_done ?? true;
+  const weeklyDigest = notificationSettings.weekly_digest ?? false;
+  const motivation = notificationSettings.motivation ?? false;
+  const deadlineWarningHours = notificationSettings.deadline_warning_hours ?? 3;
+  const reminderMinutes = notificationSettings.reminder_minutes ?? 15;
+
+  const checked = value => value ? 'checked' : '';
+
   return `
 <div class="mb-8">
   <h2 class="text-3xl font-black text-white tracking-tight mb-2">Сповіщення</h2>
-  <p class="text-[#c7c4d8] leading-relaxed max-w-2xl">Керуй тим, як і коли ПланІQ нагадує тобі про задачі</p>
+  <p class="text-[#c7c4d8] leading-relaxed max-w-2xl">
+    Керуй тим, які системні нагадування створює ПланІQ.
+  </p>
 </div>
+
 <div class="grid grid-cols-1 xl:grid-cols-12 gap-8">
   <div class="xl:col-span-8 flex flex-col gap-4">
-    ${renderAIInsight({ title: 'Розумна оптимізація', message: 'Ми виявили, що ви продуктивніші, коли отримуєте нагадування за 15 хвилин до початку. Ваші поточні налаштування оптимальні.', icon: 'auto_awesome' })}
+    ${renderAIInsight({
+      title: 'Розумна оптимізація',
+      message: 'Ці налаштування визначають, які сповіщення система створюватиме автоматично.',
+      icon: 'auto_awesome'
+    })}
+
     <div class="space-y-3 mt-4">
+
       <div class="group flex items-center justify-between p-5 rounded-xl bg-[#1b1a26] hover:bg-[#292935] transition-all duration-300">
         <div class="flex items-center gap-4">
-          <div class="w-10 h-10 rounded-lg bg-[#c4c0ff]/10 flex items-center justify-center text-[#c4c0ff]"><span class="material-symbols-outlined">timer</span></div>
+          <div class="w-10 h-10 rounded-lg bg-[#c4c0ff]/10 flex items-center justify-center text-[#c4c0ff]">
+            <span class="material-symbols-outlined">notifications</span>
+          </div>
           <div>
-            <p class="text-white font-medium">Нагадування перед задачею</p>
-            <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mt-0.5">Focus Reminder</p>
+            <p class="text-white font-medium">Увімкнути сповіщення</p>
+            <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mt-0.5">Main switch</p>
           </div>
         </div>
-        <div class="flex items-center gap-6">
-          <span class="text-sm font-medium px-3 py-1 bg-[#343440] rounded-lg text-[#c4c0ff]">15 хв</span>
-          <label class="relative inline-flex items-center cursor-pointer">
-            <input checked class="sr-only peer notify-toggle" type="checkbox"/>
-            <div class="w-11 h-6 bg-[#343440] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#c4c0ff]"></div>
-          </label>
-        </div>
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input ${checked(enabled)} class="sr-only peer notify-toggle" type="checkbox" id="notif-enabled"/>
+          <div class="w-11 h-6 bg-[#343440] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#c4c0ff]"></div>
+        </label>
       </div>
+
       <div class="group flex items-center justify-between p-5 rounded-xl bg-[#1b1a26] hover:bg-[#292935] transition-all duration-300">
         <div class="flex items-center gap-4">
-          <div class="w-10 h-10 rounded-lg bg-[#ffb2bc]/10 flex items-center justify-center text-[#ffb2bc]"><span class="material-symbols-outlined">notification_important</span></div>
+          <div class="w-10 h-10 rounded-lg bg-[#ffb2bc]/10 flex items-center justify-center text-[#ffb2bc]">
+            <span class="material-symbols-outlined">warning</span>
+          </div>
           <div>
             <p class="text-white font-medium">Попередження про дедлайн</p>
-            <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mt-0.5">Critical alert</p>
+            <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mt-0.5">deadline_soon</p>
           </div>
         </div>
-        <div class="flex items-center gap-6">
-          <span class="text-sm font-medium px-3 py-1 bg-[#343440] rounded-lg text-[#ffb2bc]">3 год</span>
+        <div class="flex items-center gap-4">
+          <select id="deadline-warning-hours" class="bg-[#343440] text-[#ffb2bc] text-sm font-bold rounded-lg px-3 py-2 outline-none">
+            <option value="1" ${deadlineWarningHours === 1 ? 'selected' : ''}>1 год</option>
+            <option value="3" ${deadlineWarningHours === 3 ? 'selected' : ''}>3 год</option>
+            <option value="6" ${deadlineWarningHours === 6 ? 'selected' : ''}>6 год</option>
+            <option value="24" ${deadlineWarningHours === 24 ? 'selected' : ''}>24 год</option>
+          </select>
           <label class="relative inline-flex items-center cursor-pointer">
-            <input checked class="sr-only peer notify-toggle" type="checkbox"/>
-            <div class="w-11 h-6 bg-[#343440] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#c4c0ff]"></div>
+            <input ${checked(deadlineSoon)} class="sr-only peer notify-toggle" type="checkbox" id="notif-deadline-soon"/>
+            <div class="w-11 h-6 bg-[#343440] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#c4c0ff]"></div>
           </label>
         </div>
       </div>
+
       <div class="group flex items-center justify-between p-5 rounded-xl bg-[#1b1a26] hover:bg-[#292935] transition-all duration-300">
         <div class="flex items-center gap-4">
-          <div class="w-10 h-10 rounded-lg bg-[#4ddada]/10 flex items-center justify-center text-[#4ddada]"><span class="material-symbols-outlined">update</span></div>
+          <div class="w-10 h-10 rounded-lg bg-[#ffb2bc]/10 flex items-center justify-center text-[#ffb2bc]">
+            <span class="material-symbols-outlined">notification_important</span>
+          </div>
           <div>
-            <p class="text-white font-medium">Сповіщення про перепланування</p>
-            <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mt-0.5">System Sync</p>
+            <p class="text-white font-medium">Прострочені задачі</p>
+            <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mt-0.5">task_overdue</p>
           </div>
         </div>
         <label class="relative inline-flex items-center cursor-pointer">
-          <input checked class="sr-only peer notify-toggle" type="checkbox"/>
-          <div class="w-11 h-6 bg-[#343440] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#c4c0ff]"></div>
+          <input ${checked(taskOverdue)} class="sr-only peer notify-toggle" type="checkbox" id="notif-task-overdue"/>
+          <div class="w-11 h-6 bg-[#343440] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#c4c0ff]"></div>
         </label>
       </div>
+
       <div class="group flex items-center justify-between p-5 rounded-xl bg-[#1b1a26] hover:bg-[#292935] transition-all duration-300">
         <div class="flex items-center gap-4">
-          <div class="w-10 h-10 rounded-lg bg-[#343440] flex items-center justify-center text-slate-400"><span class="material-symbols-outlined">analytics</span></div>
+          <div class="w-10 h-10 rounded-lg bg-[#4ddada]/10 flex items-center justify-center text-[#4ddada]">
+            <span class="material-symbols-outlined">update</span>
+          </div>
+          <div>
+            <p class="text-white font-medium">Сповіщення про перенесення задач</p>
+            <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mt-0.5">rescheduled</p>
+          </div>
+        </div>
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input ${checked(rescheduled)} class="sr-only peer notify-toggle" type="checkbox" id="notif-rescheduled"/>
+          <div class="w-11 h-6 bg-[#343440] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#c4c0ff]"></div>
+        </label>
+      </div>
+
+      <div class="group flex items-center justify-between p-5 rounded-xl bg-[#1b1a26] hover:bg-[#292935] transition-all duration-300">
+        <div class="flex items-center gap-4">
+          <div class="w-10 h-10 rounded-lg bg-[#4ddada]/10 flex items-center justify-center text-[#4ddada]">
+            <span class="material-symbols-outlined">auto_awesome</span>
+          </div>
+          <div>
+            <p class="text-white font-medium">AI-сповіщення</p>
+            <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mt-0.5">planning_done</p>
+          </div>
+        </div>
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input ${checked(planningDone)} class="sr-only peer notify-toggle" type="checkbox" id="notif-planning-done"/>
+          <div class="w-11 h-6 bg-[#343440] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#c4c0ff]"></div>
+        </label>
+      </div>
+
+      <div class="group flex items-center justify-between p-5 rounded-xl bg-[#1b1a26] hover:bg-[#292935] transition-all duration-300 opacity-80">
+        <div class="flex items-center gap-4">
+          <div class="w-10 h-10 rounded-lg bg-[#343440] flex items-center justify-center text-slate-400">
+            <span class="material-symbols-outlined">analytics</span>
+          </div>
           <div>
             <p class="text-white font-medium">Щотижневий звіт</p>
-            <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mt-0.5">Weekly digest</p>
+            <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mt-0.5">weekly_digest</p>
           </div>
         </div>
         <label class="relative inline-flex items-center cursor-pointer">
-          <input class="sr-only peer notify-toggle" type="checkbox"/>
-          <div class="w-11 h-6 bg-[#343440] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#c4c0ff]"></div>
+          <input ${checked(weeklyDigest)} class="sr-only peer notify-toggle" type="checkbox" id="notif-weekly-digest"/>
+          <div class="w-11 h-6 bg-[#343440] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#c4c0ff]"></div>
         </label>
       </div>
-      <div class="group flex items-center justify-between p-5 rounded-xl bg-[#1b1a26] hover:bg-[#292935] transition-all duration-300">
+
+      <div class="group flex items-center justify-between p-5 rounded-xl bg-[#1b1a26] hover:bg-[#292935] transition-all duration-300 opacity-80">
         <div class="flex items-center gap-4">
-          <div class="w-10 h-10 rounded-lg bg-[#343440] flex items-center justify-center text-slate-400"><span class="material-symbols-outlined">rocket_launch</span></div>
+          <div class="w-10 h-10 rounded-lg bg-[#343440] flex items-center justify-center text-slate-400">
+            <span class="material-symbols-outlined">rocket_launch</span>
+          </div>
           <div>
             <p class="text-white font-medium">Мотиваційні нагадування</p>
-            <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mt-0.5">Mindset</p>
+            <p class="text-xs font-mono text-slate-500 uppercase tracking-widest mt-0.5">motivation</p>
           </div>
         </div>
         <label class="relative inline-flex items-center cursor-pointer">
-          <input class="sr-only peer notify-toggle" type="checkbox"/>
-          <div class="w-11 h-6 bg-[#343440] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#c4c0ff]"></div>
+          <input ${checked(motivation)} class="sr-only peer notify-toggle" type="checkbox" id="notif-motivation"/>
+          <div class="w-11 h-6 bg-[#343440] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#c4c0ff]"></div>
         </label>
       </div>
     </div>
   </div>
+
   <div class="xl:col-span-4 space-y-6">
     <div class="bg-[#1f1e2a] p-6 rounded-2xl border border-white/5 h-full flex flex-col">
-      <h3 class="font-bold text-xl text-white mb-6 flex items-center gap-2"><span class="material-symbols-outlined text-[#c4c0ff]">hub</span> Канали сповіщень</h3>
+      <h3 class="font-bold text-xl text-white mb-6 flex items-center gap-2">
+        <span class="material-symbols-outlined text-[#c4c0ff]">hub</span>
+        Канали сповіщень
+      </h3>
+
       <div class="space-y-4 flex-1">
-        <div class="notify-channel p-4 rounded-xl border-l-4 border-[#c4c0ff] bg-[#292935] hover:translate-x-1 transition-transform cursor-pointer" data-state="active" id="channel-browser">
+        <div class="notify-channel p-4 rounded-xl border-l-4 border-[#c4c0ff] bg-[#292935]" data-state="active" id="channel-browser">
           <div class="flex items-center justify-between mb-2">
             <span class="material-symbols-outlined icon text-[#c4c0ff]">language</span>
             <span class="badge px-2 py-0.5 text-[10px] font-bold uppercase tracking-tighter bg-[#c4c0ff]/20 text-[#c4c0ff] rounded">Active</span>
@@ -427,7 +559,8 @@ function notificationsTab() {
           <p class="text-white font-bold">Браузер</p>
           <p class="status-text text-xs text-slate-400">Увімкнено</p>
         </div>
-        <div class="notify-channel p-4 rounded-xl border-l-4 border-slate-700 bg-[#1b1a26] hover:translate-x-1 transition-transform cursor-pointer opacity-70" data-state="disabled" id="channel-email">
+
+        <div class="notify-channel p-4 rounded-xl border-l-4 border-slate-700 bg-[#1b1a26] opacity-70" data-state="disabled" id="channel-email">
           <div class="flex items-center justify-between mb-2">
             <span class="material-symbols-outlined icon text-slate-500">mail</span>
             <span class="badge px-2 py-0.5 text-[10px] font-bold uppercase tracking-tighter bg-[#343440] text-slate-500 rounded">Disabled</span>
@@ -435,8 +568,11 @@ function notificationsTab() {
           <p class="text-white font-bold">Email</p>
           <p class="status-text text-xs text-slate-400">Вимкнено</p>
         </div>
-        <div class="notify-channel p-4 rounded-xl border-l-4 border-slate-700 bg-[#1b1a26] hover:translate-x-1 transition-transform cursor-pointer opacity-70 group" data-state="disabled" data-locked="true" id="channel-mobile">
-          <div class="absolute -right-2 -top-2 text-4xl rotate-12 opacity-5 text-[#4ddada] transition-transform group-hover:scale-110"><span class="material-symbols-outlined" style="font-size: 80px;">smartphone</span></div>
+
+        <div class="notify-channel p-4 rounded-xl border-l-4 border-slate-700 bg-[#1b1a26] opacity-70 relative overflow-hidden" data-state="disabled" data-locked="true" id="channel-mobile">
+          <div class="absolute -right-2 -top-2 text-4xl rotate-12 opacity-5 text-[#4ddada]">
+            <span class="material-symbols-outlined" style="font-size: 80px;">smartphone</span>
+          </div>
           <div class="flex items-center justify-between mb-2 relative z-10">
             <span class="material-symbols-outlined icon text-[#4ddada] opacity-50">smartphone</span>
             <span class="badge px-2 py-0.5 text-[10px] font-bold uppercase tracking-tighter bg-[#4ddada]/10 text-[#4ddada] rounded">Coming soon</span>
@@ -445,15 +581,23 @@ function notificationsTab() {
           <p class="status-text text-xs text-slate-400 relative z-10">Незабаром</p>
         </div>
       </div>
+
       <div class="mt-8 pt-6 border-t border-white/5">
-        <p class="text-xs text-[#c7c4d8] italic">Налаштуйте критичні сповіщення для отримання інформації навіть у режимі "Не турбувати".</p>
+        <p class="text-xs text-[#c7c4d8] italic">
+          Email та мобільні push-сповіщення можна залишити як перспективу розвитку.
+        </p>
       </div>
     </div>
   </div>
 </div>
+
 <div class="mt-8 flex justify-start items-center gap-4 pt-4">
-  <button id="save-notifications" class="px-8 py-3 bg-[#c4c0ff] hover:bg-[#8781ff] text-[#2000a4] font-bold rounded-xl shadow-lg shadow-[#c4c0ff]/20 active:scale-95 transition-all">Зберегти зміни</button>
-  <button id="cancel-notifications" class="px-8 py-3 text-slate-400 font-medium hover:text-white transition-colors">Скасувати</button>
+  <button id="save-notifications" class="px-8 py-3 bg-[#c4c0ff] hover:bg-[#8781ff] text-[#2000a4] font-bold rounded-xl shadow-lg shadow-[#c4c0ff]/20 active:scale-95 transition-all">
+    Зберегти зміни
+  </button>
+  <button id="cancel-notifications" class="px-8 py-3 text-slate-400 font-medium hover:text-white transition-colors">
+    Скасувати
+  </button>
 </div>
 `;
 }
@@ -715,11 +859,26 @@ export async function initSettings() {
   }
 
   function hydrateNotificationsTab() {
-    const enabled = preferencesStore.getNotificationsEnabled();
+    const prefs = preferencesStore.get();
+    const settings = prefs?.notifications || {};
 
-    document.querySelectorAll('.notify-toggle').forEach(toggle => {
-      toggle.checked = enabled;
-    });
+    const setChecked = (id, value) => {
+      const el = document.getElementById(id);
+      if (el) el.checked = value;
+    };
+
+    setChecked('notif-enabled', settings.enabled ?? prefs?.notifications_enabled ?? true);
+    setChecked('notif-deadline-soon', settings.deadline_soon ?? true);
+    setChecked('notif-task-overdue', settings.task_overdue ?? true);
+    setChecked('notif-rescheduled', settings.rescheduled ?? true);
+    setChecked('notif-planning-done', settings.planning_done ?? true);
+    setChecked('notif-weekly-digest', settings.weekly_digest ?? false);
+    setChecked('notif-motivation', settings.motivation ?? false);
+
+    const warningSelect = document.getElementById('deadline-warning-hours');
+    if (warningSelect) {
+      warningSelect.value = String(settings.deadline_warning_hours ?? 3);
+    }
   }
 
   function clearActivePreset() {
@@ -796,17 +955,28 @@ export async function initSettings() {
           saveProfile.textContent = 'Зберігаємо...';
 
           try {
+            const name = document.getElementById('profile-name')?.value?.trim() || '';
             const timezone = document.getElementById('profile-timezone')?.value || 'Europe/Kyiv';
 
+            if (name.length < 2) {
+              toast('Ім’я має містити щонайменше 2 символи', 'error');
+              return;
+            }
+
+            const user = await updateProfileAPI(name);
             await preferencesStore.patch({ timezone });
 
-            toast('Часовий пояс збережено!', 'success');
+            window.dispatchEvent(new CustomEvent('user-profile-updated', {
+              detail: user,
+            }));
+
+            toast('Профіль збережено!', 'success');
           } catch (err) {
-            console.error('Save profile preferences error:', err);
-            toast('Помилка збереження часового поясу', 'error');
+            console.error('Save profile error:', err);
+            toast(err.message || 'Помилка збереження профілю', 'error');
           } finally {
             saveProfile.disabled = false;
-            saveProfile.textContent = 'Зберегти часовий пояс';
+            saveProfile.textContent = 'Зберегти зміни';
           }
         });
       }
@@ -944,53 +1114,134 @@ export async function initSettings() {
       });
     }
 
-      const saveAlgo = document.getElementById('save-algorithm');
-      if (saveAlgo) {
-        saveAlgo.addEventListener('click', async () => {
-          saveAlgo.disabled = true;
-          saveAlgo.textContent = 'Зберігаємо...';
+    if (tabId === 'security') {
+      const changePw = document.getElementById('change-pw');
+      const errorBox = document.getElementById('pw-error');
+
+      function showPasswordError(message) {
+        if (!errorBox) return;
+        errorBox.textContent = message;
+        errorBox.classList.remove('hidden');
+      }
+
+      function clearPasswordError() {
+        if (!errorBox) return;
+        errorBox.textContent = '';
+        errorBox.classList.add('hidden');
+      }
+
+      if (changePw) {
+        changePw.addEventListener('click', async () => {
+          clearPasswordError();
+
+          const currentPassword = document.getElementById('current-pw')?.value || '';
+          const newPassword = document.getElementById('new-pw')?.value || '';
+          const confirmPassword = document.getElementById('confirm-pw')?.value || '';
+
+          if (!currentPassword || !newPassword || !confirmPassword) {
+            showPasswordError('Заповни всі поля пароля.');
+            return;
+          }
+
+          if (newPassword.length < 6) {
+            showPasswordError('Новий пароль має містити щонайменше 6 символів.');
+            return;
+          }
+
+          if (newPassword !== confirmPassword) {
+            showPasswordError('Новий пароль і підтвердження не збігаються.');
+            return;
+          }
+
+          changePw.disabled = true;
+          changePw.textContent = 'Змінюємо...';
 
           try {
-            const toggles = document.querySelectorAll('.toggle-switch');
-            const bufferBtn = document.querySelector('.buffer-btn.active');
-            const reminderBtn = document.querySelector('.reminder-btn.active');
+            await changePasswordAPI(currentPassword, newPassword);
 
-            const bufferText = bufferBtn?.textContent?.trim() || '10 хв';
-            const reminderText = reminderBtn?.textContent?.trim() || '15 хв';
+            document.getElementById('current-pw').value = '';
+            document.getElementById('new-pw').value = '';
+            document.getElementById('confirm-pw').value = '';
 
-            const bufferMinutes = parseInt(bufferText, 10) || 10;
-            const reminderMinutes = reminderText === 'Вимкнено' ? 0 : (parseInt(reminderText, 10) || 15);
-
-            await preferencesStore.patch({
-              reality_coefficient: toggles[0]?.dataset.on === 'true' ? 1.2 : 1.0,
-              auto_reschedule: toggles[1]?.dataset.on === 'true',
-              protect_peak_hours: toggles[2]?.dataset.on === 'true',
-              buffer_minutes: bufferMinutes,
-              reminder_minutes: reminderMinutes,
-            });
-
-            toast('Налаштування алгоритму збережено!', 'success');
+            toast('Пароль успішно змінено!', 'success');
           } catch (err) {
-            console.error('Save algorithm error:', err);
-            toast('Помилка збереження алгоритму', 'error');
+            console.error('Change password error:', err);
+            showPasswordError(err.message || 'Не вдалося змінити пароль.');
+            toast('Помилка зміни пароля', 'error');
           } finally {
-            saveAlgo.disabled = false;
-            saveAlgo.innerHTML = '<span class="material-symbols-outlined">save</span>Зберегти налаштування алгоритму';
+            changePw.disabled = false;
+            changePw.textContent = 'Змінити пароль';
           }
         });
       }
 
-      const saveNotif = document.getElementById('save-notifications');
+      const deleteAccount = document.getElementById('delete-account');
+      if (deleteAccount) {
+        deleteAccount.addEventListener('click', () => {
+          toast('Видалення акаунту буде реалізовано окремим безпечним сценарієм.', 'info');
+        });
+      }
+    }
+
+
+    const saveAlgo = document.getElementById('save-algorithm');
+    if (saveAlgo) {
+      saveAlgo.addEventListener('click', async () => {
+        saveAlgo.disabled = true;
+        saveAlgo.textContent = 'Зберігаємо...';
+
+        try {
+          const toggles = document.querySelectorAll('.toggle-switch');
+          const bufferBtn = document.querySelector('.buffer-btn.active');
+          const reminderBtn = document.querySelector('.reminder-btn.active');
+
+          const bufferText = bufferBtn?.textContent?.trim() || '10 хв';
+          const reminderText = reminderBtn?.textContent?.trim() || '15 хв';
+
+          const bufferMinutes = parseInt(bufferText, 10) || 10;
+          const reminderMinutes = reminderText === 'Вимкнено' ? 0 : (parseInt(reminderText, 10) || 15);
+
+          await preferencesStore.patch({
+            reality_coefficient: toggles[0]?.dataset.on === 'true' ? 1.2 : 1.0,
+            auto_reschedule: toggles[1]?.dataset.on === 'true',
+            protect_peak_hours: toggles[2]?.dataset.on === 'true',
+            buffer_minutes: bufferMinutes,
+            reminder_minutes: reminderMinutes,
+          });
+
+          toast('Налаштування алгоритму збережено!', 'success');
+        } catch (err) {
+          console.error('Save algorithm error:', err);
+          toast('Помилка збереження алгоритму', 'error');
+        } finally {
+          saveAlgo.disabled = false;
+          saveAlgo.innerHTML = '<span class="material-symbols-outlined">save</span>Зберегти налаштування алгоритму';
+        }
+      });
+    }
+
+    const saveNotif = document.getElementById('save-notifications');
       if (saveNotif) {
         saveNotif.addEventListener('click', async () => {
           saveNotif.disabled = true;
           saveNotif.textContent = 'Зберігаємо...';
 
           try {
-            const enabled = [...document.querySelectorAll('.notify-toggle')].some(t => t.checked);
+            const settings = {
+              enabled: document.getElementById('notif-enabled')?.checked ?? true,
+              deadline_soon: document.getElementById('notif-deadline-soon')?.checked ?? true,
+              task_overdue: document.getElementById('notif-task-overdue')?.checked ?? true,
+              rescheduled: document.getElementById('notif-rescheduled')?.checked ?? true,
+              planning_done: document.getElementById('notif-planning-done')?.checked ?? true,
+              weekly_digest: document.getElementById('notif-weekly-digest')?.checked ?? false,
+              motivation: document.getElementById('notif-motivation')?.checked ?? false,
+              deadline_warning_hours: parseInt(document.getElementById('deadline-warning-hours')?.value || '3', 10),
+              reminder_minutes: 15,
+            };
 
             await preferencesStore.patch({
-              notifications_enabled: enabled,
+              notifications_enabled: settings.enabled,
+              notifications: settings,
             });
 
             toast('Налаштування сповіщень збережено!', 'success');
@@ -1004,57 +1255,57 @@ export async function initSettings() {
         });
       }
 
-      const cancelNotif = document.getElementById('cancel-notifications');
-      if (cancelNotif) {
-        cancelNotif.addEventListener('click', () => {
-          toast('Зміни скасовано', 'info');
-        });
-      }
-
-      document.querySelectorAll('.notify-toggle').forEach(toggle => {
-        toggle.addEventListener('change', e => {
-          if (e.target.checked) toast('Опцію сповіщень увімкнено', 'success');
-          else toast('Опцію сповіщень вимкнено', 'info');
-        });
+    const cancelNotif = document.getElementById('cancel-notifications');
+    if (cancelNotif) {
+      cancelNotif.addEventListener('click', () => {
+        toast('Зміни скасовано', 'info');
       });
-
-      document.querySelectorAll('.notify-channel').forEach(channel => {
-        channel.addEventListener('click', () => {
-          if (channel.dataset.locked === 'true') {
-            toast('Цей канал ще розробляється', 'info');
-            return;
-          }
-
-          const state = channel.dataset.state;
-
-          if (state === 'disabled') {
-            channel.dataset.state = 'active';
-            channel.classList.remove('opacity-70', 'border-slate-700', 'bg-[#1b1a26]');
-            channel.classList.add('border-[#c4c0ff]', 'bg-[#292935]');
-            toast('Канал сповіщень увімкнено', 'success');
-          } else {
-            channel.dataset.state = 'disabled';
-            channel.classList.add('opacity-70', 'border-slate-700', 'bg-[#1b1a26]');
-            channel.classList.remove('border-[#c4c0ff]', 'bg-[#292935]');
-            toast('Канал сповіщень вимкнено', 'info');
-          }
-        });
-      });
-
-      const saveApp = document.getElementById('save-appearance');
-      if (saveApp) {
-        saveApp.addEventListener('click', () => {
-          toast('Налаштування вигляду збережено!', 'success');
-        });
-      }
     }
 
-    tabs.forEach(tab => {
-      tab.addEventListener('click', e => {
-        e.preventDefault();
-        showTab(tab.dataset.tab);
+    document.querySelectorAll('.notify-toggle').forEach(toggle => {
+      toggle.addEventListener('change', e => {
+        if (e.target.checked) toast('Опцію сповіщень увімкнено', 'success');
+        else toast('Опцію сповіщень вимкнено', 'info');
       });
     });
 
-    showTab('profile');
+    document.querySelectorAll('.notify-channel').forEach(channel => {
+      channel.addEventListener('click', () => {
+        if (channel.dataset.locked === 'true') {
+          toast('Цей канал ще розробляється', 'info');
+          return;
+        }
+
+        const state = channel.dataset.state;
+
+        if (state === 'disabled') {
+          channel.dataset.state = 'active';
+          channel.classList.remove('opacity-70', 'border-slate-700', 'bg-[#1b1a26]');
+          channel.classList.add('border-[#c4c0ff]', 'bg-[#292935]');
+          toast('Канал сповіщень увімкнено', 'success');
+        } else {
+          channel.dataset.state = 'disabled';
+          channel.classList.add('opacity-70', 'border-slate-700', 'bg-[#1b1a26]');
+          channel.classList.remove('border-[#c4c0ff]', 'bg-[#292935]');
+          toast('Канал сповіщень вимкнено', 'info');
+        }
+      });
+    });
+
+    const saveApp = document.getElementById('save-appearance');
+    if (saveApp) {
+      saveApp.addEventListener('click', () => {
+        toast('Налаштування вигляду збережено!', 'success');
+      });
+    }
   }
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', e => {
+      e.preventDefault();
+      showTab(tab.dataset.tab);
+    });
+  });
+
+  showTab('profile');
+}

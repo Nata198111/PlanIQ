@@ -4,6 +4,7 @@ from app.domain.models.notification import Notification
 from app.domain.models.task import Task
 from app.ports.repositories.notification_repository import NotificationRepository
 from app.ports.repositories.task_repository import TaskRepository
+from app.ports.repositories.preferences_repository import PreferencesRepository
 
 
 class NotificationService:
@@ -13,9 +14,11 @@ class NotificationService:
         self,
         notification_repo: NotificationRepository,
         task_repo: TaskRepository | None = None,
+        preferences_repo: PreferencesRepository | None = None,
     ):
         self.notification_repo = notification_repo
         self.task_repo = task_repo
+        self.preferences_repo = preferences_repo
 
     def _get_task_datetime(self, task: Task) -> datetime | None:
         if not task.date:
@@ -40,6 +43,8 @@ class NotificationService:
         notification_type: str,
         task_id: str = "",
     ) -> Notification | None:
+        if not await self._is_notification_enabled(user_id, notification_type):
+            return None
         if task_id:
             exists = await self.notification_repo.exists_by_task_and_type(
                 task_id=task_id,
@@ -69,7 +74,8 @@ class NotificationService:
             return
 
         now = datetime.now()
-        deadline_limit = now + timedelta(hours=self.DEADLINE_SOON_HOURS)
+        warning_hours = await self._get_deadline_warning_hours(task.user_id)
+        deadline_limit = now + timedelta(hours=warning_hours)
 
         if task_datetime < now:
             await self._create_once(
@@ -120,3 +126,36 @@ class NotificationService:
 
         for task in tasks:
             await self.create_deadline_notifications_for_task(task)
+
+    async def _get_notification_settings(self, user_id: str):
+        if not self.preferences_repo:
+            return None
+
+        prefs = await self.preferences_repo.get_by_user_id(user_id)
+        return prefs.notifications if prefs else None
+
+    async def _is_notification_enabled(
+        self,
+        user_id: str,
+        notification_type: str,
+    ) -> bool:
+        settings = await self._get_notification_settings(user_id)
+
+        if not settings:
+            return True
+
+        if not settings.enabled:
+            return False
+
+        if hasattr(settings, notification_type):
+            return bool(getattr(settings, notification_type))
+
+        return True
+
+    async def _get_deadline_warning_hours(self, user_id: str) -> int:
+        settings = await self._get_notification_settings(user_id)
+
+        if not settings:
+            return self.DEADLINE_SOON_HOURS
+
+        return settings.deadline_warning_hours

@@ -104,7 +104,23 @@ class PreferencesStore {
   }
 
   getNotificationsEnabled() {
-    return this._prefs?.notifications_enabled ?? true;
+    return this.getNotificationSettings().enabled;
+  }
+
+  getNotificationSettings() {
+    const settings = this._prefs?.notifications || {};
+
+    return {
+      enabled: settings.enabled ?? this._prefs?.notifications_enabled ?? true,
+      deadline_soon: settings.deadline_soon ?? true,
+      task_overdue: settings.task_overdue ?? true,
+      rescheduled: settings.rescheduled ?? true,
+      planning_done: settings.planning_done ?? true,
+      weekly_digest: settings.weekly_digest ?? false,
+      motivation: settings.motivation ?? false,
+      deadline_warning_hours: settings.deadline_warning_hours ?? 3,
+      reminder_minutes: settings.reminder_minutes ?? 15,
+    };
   }
 
   // ── Оновлення ──────────────────────────────────────────────────

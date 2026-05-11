@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 
 from app.api.v1.dependencies.auth_deps import get_current_user, get_user_repository
 from app.api.v1.dependencies.task_deps import get_task_repository
-from app.api.v1.dependencies.preferences_deps import get_notification_repository
+from app.api.v1.dependencies.preferences_deps import get_notification_repository, get_preferences_repository
 from app.application.services.notification_service import NotificationService
 from app.application.use_cases.tasks.create_task import CreateTask
 from app.application.use_cases.tasks.delete_task import DeleteTask
@@ -11,6 +11,7 @@ from app.application.use_cases.tasks.update_task import UpdateTask
 from app.domain.models.task import Task
 from app.domain.models.user import User
 from app.ports.repositories.task_repository import TaskRepository
+from app.ports.repositories.preferences_repository import PreferencesRepository
 from app.ports.repositories.notification_repository import NotificationRepository
 from app.schemas.task.requests import CreateTaskRequest, UpdateTaskRequest
 from app.schemas.task.responses import TaskResponse
@@ -53,6 +54,7 @@ async def create_task(
     current_user: User = Depends(get_current_user),
     task_repo: TaskRepository = Depends(get_task_repository),
     notification_repo: NotificationRepository = Depends(get_notification_repository),
+    preferences_repo: PreferencesRepository = Depends(get_preferences_repository),
 ):
     """Створити нову задачу."""
     use_case = CreateTask(task_repo)
@@ -68,7 +70,7 @@ async def create_task(
         time=body.time,
         duration=body.duration,
     )
-    notification_service = NotificationService(notification_repo)
+    notification_service = NotificationService(notification_repo, preferences_repo=preferences_repo)
     await notification_service.create_deadline_notifications_for_task(task)
     return _to_response(task)
 
@@ -92,6 +94,7 @@ async def update_task(
     current_user: User = Depends(get_current_user),
     task_repo: TaskRepository = Depends(get_task_repository),
     notification_repo: NotificationRepository = Depends(get_notification_repository),
+    preferences_repo: PreferencesRepository = Depends(get_preferences_repository),
 ):
     """Оновити задачу (часткове оновлення)."""
     old_task = await task_repo.get_by_id(task_id, current_user.id)
@@ -101,7 +104,7 @@ async def update_task(
         user_id=current_user.id,
         updates=body.model_dump(exclude_none=True),
     )
-    notification_service = NotificationService(notification_repo)
+    notification_service = NotificationService(notification_repo, preferences_repo=preferences_repo)
     await notification_service.create_rescheduled_notification(old_task, task)
     await notification_service.create_deadline_notifications_for_task(task)
     return _to_response(task)

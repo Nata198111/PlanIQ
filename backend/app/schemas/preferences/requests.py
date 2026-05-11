@@ -13,6 +13,18 @@ class LunchBreakSchema(BaseModel):
     end: str      = "13:00"
 
 
+class NotificationSettingsSchema(BaseModel):
+    enabled: bool = True
+    deadline_soon: bool = True
+    task_overdue: bool = True
+    rescheduled: bool = True
+    planning_done: bool = True
+    weekly_digest: bool = False
+    motivation: bool = False
+    deadline_warning_hours: int = 3
+    reminder_minutes: int = 15
+
+
 class UpdatePreferencesRequest(BaseModel):
     timezone: str | None                  = None
     work_days: list[int] | None           = None
@@ -26,3 +38,4 @@ class UpdatePreferencesRequest(BaseModel):
     buffer_minutes: int | None            = None
     notifications_enabled: bool | None    = None
     reminder_minutes: int | None          = None
+    notifications: NotificationSettingsSchema | None = None

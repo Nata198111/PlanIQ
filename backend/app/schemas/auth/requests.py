@@ -25,3 +25,25 @@ class RegisterRequest(BaseModel):
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
+
+class UpdateProfileRequest(BaseModel):
+    name: str
+
+    @field_validator("name")
+    @classmethod
+    def name_not_empty(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("Name cannot be empty")
+        return v.strip()
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+    @field_validator("new_password")
+    @classmethod
+    def new_password_min_length(cls, v: str) -> str:
+        if len(v) < 6:
+            raise ValueError("Password must be at least 6 characters")
+        return v

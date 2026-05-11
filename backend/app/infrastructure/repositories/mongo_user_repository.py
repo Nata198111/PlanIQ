@@ -53,3 +53,24 @@ class MongoUserRepository(UserRepository):
         result = await self.collection.insert_one(doc)
         user.id = str(result.inserted_id)
         return user
+    
+    async def update_profile(self, user_id: str, name: str) -> User | None:
+        try:
+            await self.collection.update_one(
+                {"_id": ObjectId(user_id)},
+                {"$set": {"name": name}},
+            )
+        except Exception:
+            return None
+
+        return await self.find_by_id(user_id)
+
+    async def update_password(self, user_id: str, hashed_password: str) -> bool:
+        try:
+            result = await self.collection.update_one(
+                {"_id": ObjectId(user_id)},
+                {"$set": {"hashed_password": hashed_password}},
+            )
+            return result.matched_count > 0
+        except Exception:
+            return False

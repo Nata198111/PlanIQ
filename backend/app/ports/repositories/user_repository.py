@@ -23,3 +23,13 @@ class UserRepository(ABC):
     async def save(self, user: User) -> User:
         """Зберегти нового користувача. Повертає збережений об'єкт з id."""
         ...
+
+    @abstractmethod
+    async def update_profile(self, user_id: str, name: str) -> User | None:
+        """Оновити профіль поточного користувача."""
+        ...
+
+    @abstractmethod
+    async def update_password(self, user_id: str, hashed_password: str) -> bool:
+        """Оновити пароль поточного користувача."""
+        ...

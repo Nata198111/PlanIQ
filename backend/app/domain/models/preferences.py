@@ -17,6 +17,19 @@ class LunchBreak:
 
 
 @dataclass
+class NotificationSettings:
+    enabled: bool = True
+    deadline_soon: bool = True
+    task_overdue: bool = True
+    rescheduled: bool = True
+    planning_done: bool = True
+    weekly_digest: bool = False
+    motivation: bool = False
+    deadline_warning_hours: int = 3
+    reminder_minutes: int = 15
+
+
+@dataclass
 class UserPreferences:
     user_id: str
     id: str = ""
@@ -48,6 +61,7 @@ class UserPreferences:
     # Сповіщення
     notifications_enabled: bool = True
     reminder_minutes: int       = 15
-
+    notifications: NotificationSettings = field(default_factory=NotificationSettings)
+    
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))

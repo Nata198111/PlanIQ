@@ -14,6 +14,18 @@ class LunchBreakResponse(BaseModel):
     end: str
 
 
+class NotificationSettingsResponse(BaseModel):
+    enabled: bool
+    deadline_soon: bool
+    task_overdue: bool
+    rescheduled: bool
+    planning_done: bool
+    weekly_digest: bool
+    motivation: bool
+    deadline_warning_hours: int
+    reminder_minutes: int
+
+
 class PreferencesResponse(BaseModel):
     id: str
     user_id: str
@@ -29,4 +41,5 @@ class PreferencesResponse(BaseModel):
     buffer_minutes: int
     notifications_enabled: bool
     reminder_minutes: int
+    notifications: NotificationSettingsResponse
     updated_at: datetime

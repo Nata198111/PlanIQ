@@ -49,3 +49,29 @@ export async function fetchMe() {
   setAuth({ ...auth, user: data });
   return data;
 }
+
+export function updateStoredUser(userUpdates) {
+  const auth = getUser();
+  const currentUser = auth.user || {};
+
+  setAuth({
+    ...auth,
+    user: {
+      ...currentUser,
+      ...userUpdates,
+    },
+  });
+}
+
+export async function updateProfileAPI(name) {
+  const data = await api.patch('/auth/me', { name });
+  updateStoredUser(data);
+  return data;
+}
+
+export async function changePasswordAPI(currentPassword, newPassword) {
+  return api.patch('/auth/change-password', {
+    current_password: currentPassword,
+    new_password: newPassword,
+  });
+}

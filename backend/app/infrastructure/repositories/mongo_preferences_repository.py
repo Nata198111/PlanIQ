@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
-from app.domain.models.preferences import UserPreferences, WorkHours, LunchBreak
+from app.domain.models.preferences import UserPreferences, WorkHours, LunchBreak, NotificationSettings
 from app.ports.repositories.preferences_repository import PreferencesRepository
 
 
@@ -16,6 +16,7 @@ class MongoPreferencesRepository(PreferencesRepository):
     def _to_domain(self, doc: dict) -> UserPreferences:
         wh = doc.get("work_hours", {})
         lb = doc.get("lunch_break", {})
+        notifications = doc.get("notifications", {})
         return UserPreferences(
             id=str(doc["_id"]),
             user_id=doc["user_id"],
@@ -29,6 +30,17 @@ class MongoPreferencesRepository(PreferencesRepository):
                 enabled=lb.get("enabled", True),
                 start=lb.get("start", "12:00"),
                 end=lb.get("end", "13:00"),
+            ),
+            notifications=NotificationSettings(
+                enabled=notifications.get("enabled", doc.get("notifications_enabled", True)),
+                deadline_soon=notifications.get("deadline_soon", True),
+                task_overdue=notifications.get("task_overdue", True),
+                rescheduled=notifications.get("rescheduled", True),
+                planning_done=notifications.get("planning_done", True),
+                weekly_digest=notifications.get("weekly_digest", False),
+                motivation=notifications.get("motivation", False),
+                deadline_warning_hours=notifications.get("deadline_warning_hours", 3),
+                reminder_minutes=notifications.get("reminder_minutes", doc.get("reminder_minutes", 15)),
             ),
             peak_hours=doc.get("peak_hours", ["09:00", "10:00", "11:00"]),
             selected_categories=doc.get("selected_categories", ["PERSONAL"]),
@@ -52,6 +64,17 @@ class MongoPreferencesRepository(PreferencesRepository):
                 "enabled": p.lunch_break.enabled,
                 "start": p.lunch_break.start,
                 "end": p.lunch_break.end,
+            },
+            "notifications": {
+                "enabled": p.notifications.enabled,
+                "deadline_soon": p.notifications.deadline_soon,
+                "task_overdue": p.notifications.task_overdue,
+                "rescheduled": p.notifications.rescheduled,
+                "planning_done": p.notifications.planning_done,
+                "weekly_digest": p.notifications.weekly_digest,
+                "motivation": p.notifications.motivation,
+                "deadline_warning_hours": p.notifications.deadline_warning_hours,
+                "reminder_minutes": p.notifications.reminder_minutes,
             },
             "peak_hours": p.peak_hours,
             "selected_categories": p.selected_categories,

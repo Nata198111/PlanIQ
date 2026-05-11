@@ -8,11 +8,7 @@ from app.application.use_cases.preferences.update_preferences import UpdatePrefe
 from app.domain.models.user import User
 from app.domain.models.preferences import UserPreferences
 from app.schemas.preferences.requests import UpdatePreferencesRequest
-from app.schemas.preferences.responses import (
-    PreferencesResponse,
-    WorkHoursResponse,
-    LunchBreakResponse,
-)
+from app.schemas.preferences.responses import PreferencesResponse, WorkHoursResponse, LunchBreakResponse, NotificationSettingsResponse
 
 router = APIRouter(prefix="/preferences", tags=["Preferences"])
 
@@ -37,6 +33,17 @@ def _to_response(p: UserPreferences) -> PreferencesResponse:
         buffer_minutes=p.buffer_minutes,
         notifications_enabled=p.notifications_enabled,
         reminder_minutes=p.reminder_minutes,
+                notifications=NotificationSettingsResponse(
+            enabled=p.notifications.enabled,
+            deadline_soon=p.notifications.deadline_soon,
+            task_overdue=p.notifications.task_overdue,
+            rescheduled=p.notifications.rescheduled,
+            planning_done=p.notifications.planning_done,
+            weekly_digest=p.notifications.weekly_digest,
+            motivation=p.notifications.motivation,
+            deadline_warning_hours=p.notifications.deadline_warning_hours,
+            reminder_minutes=p.notifications.reminder_minutes,
+        ),
         updated_at=p.updated_at,
     )
 
