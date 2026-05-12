@@ -10,6 +10,8 @@ class CreateTaskRequest(BaseModel):
     complexity: int = 5
     date: str = ""
     time: str = "09:00"
+    scheduled_date: str = ""
+    scheduled_time: str = ""
     duration: str = "1 год"
 
     @field_validator("title")
@@ -36,4 +38,6 @@ class UpdateTaskRequest(BaseModel):
     complexity: int | None = None
     date: str | None = None
     time: str | None = None
+    scheduled_date: str | None = None
+    scheduled_time: str | None = None
     duration: str | None = None

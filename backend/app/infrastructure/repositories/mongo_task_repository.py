@@ -24,7 +24,12 @@ class MongoTaskRepository(TaskRepository):
             complexity=doc.get("complexity", 5),
             date=doc.get("date", ""),
             time=doc.get("time", "09:00"),
+            scheduled_date=doc.get("scheduled_date", ""),
+            scheduled_time=doc.get("scheduled_time", ""),
             duration=doc.get("duration", "1 год"),
+            priority_score=doc.get("priority_score", 0.0),
+            priority_label=doc.get("priority_label", ""),
+            priority_reason=doc.get("priority_reason", ""),
             created_at=doc.get("created_at", datetime.now(timezone.utc)),
             updated_at=doc.get("updated_at"),
             completed_at=doc.get("completed_at"),
@@ -41,7 +46,12 @@ class MongoTaskRepository(TaskRepository):
             "complexity": task.complexity,
             "date": task.date,
             "time": task.time,
+            "scheduled_date": task.scheduled_date,
+            "scheduled_time": task.scheduled_time,
             "duration": task.duration,
+            "priority_score": task.priority_score,
+            "priority_label": task.priority_label,
+            "priority_reason": task.priority_reason,
             "created_at": task.created_at,
             "updated_at": task.updated_at,
             "completed_at": task.completed_at,
@@ -59,7 +69,6 @@ class MongoTaskRepository(TaskRepository):
             })
         except Exception:
             return None
-
         return self._to_domain(doc) if doc else None
 
     async def save(self, task: Task) -> Task:

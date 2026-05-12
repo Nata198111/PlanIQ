@@ -15,6 +15,8 @@ from app.api.v1.routes.auth_routes import router as auth_router
 from app.api.v1.routes.task_routes import router as task_router
 from app.api.v1.routes.preferences_routes import router as preferences_router
 from app.api.v1.routes.notification_routes import router as notification_router
+from app.api.v1.routes.blocked_slot_routes import router as blocked_slot_router
+from app.api.v1.routes.planning_routes import router as planning_router
 
 
 @asynccontextmanager
@@ -47,6 +49,8 @@ def create_app() -> FastAPI:
     app.include_router(task_router, prefix="/api/v1")
     app.include_router(preferences_router, prefix="/api/v1")
     app.include_router(notification_router, prefix="/api/v1")
+    app.include_router(blocked_slot_router, prefix="/api/v1")
+    app.include_router(planning_router, prefix="/api/v1")
 
     @app.exception_handler(AlreadyExistsError)
     async def already_exists_handler(request: Request, exc: AlreadyExistsError):

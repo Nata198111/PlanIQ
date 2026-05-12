@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 
-from app.api.v1.dependencies.auth_deps import get_current_user, get_user_repository
+from app.api.v1.dependencies.auth_deps import get_current_user
 from app.api.v1.dependencies.task_deps import get_task_repository
 from app.api.v1.dependencies.preferences_deps import get_notification_repository, get_preferences_repository
 from app.application.services.notification_service import NotificationService
@@ -10,6 +10,7 @@ from app.application.use_cases.tasks.get_tasks import GetTasks
 from app.application.use_cases.tasks.update_task import UpdateTask
 from app.domain.models.task import Task
 from app.domain.models.user import User
+from app.domain.services.priority_calculator import apply_priority_score
 from app.ports.repositories.task_repository import TaskRepository
 from app.ports.repositories.preferences_repository import PreferencesRepository
 from app.ports.repositories.notification_repository import NotificationRepository
@@ -31,7 +32,12 @@ def _to_response(task: Task) -> TaskResponse:
         complexity=task.complexity,
         date=task.date,
         time=task.time,
+        scheduled_date=task.scheduled_date,
+        scheduled_time=task.scheduled_time,
         duration=task.duration,
+        priority_score=task.priority_score,
+        priority_label=task.priority_label,
+        priority_reason=task.priority_reason,
         created_at=task.created_at,
         updated_at=task.updated_at,
     )
@@ -68,8 +74,12 @@ async def create_task(
         complexity=body.complexity,
         date=body.date,
         time=body.time,
+        scheduled_date=body.scheduled_date,
+        scheduled_time=body.scheduled_time,
         duration=body.duration,
     )
+    apply_priority_score(task)
+    await task_repo.update(task)
     notification_service = NotificationService(notification_repo, preferences_repo=preferences_repo)
     await notification_service.create_deadline_notifications_for_task(task)
     return _to_response(task)
@@ -104,6 +114,8 @@ async def update_task(
         user_id=current_user.id,
         updates=body.model_dump(exclude_none=True),
     )
+    apply_priority_score(task)
+    await task_repo.update(task)
     notification_service = NotificationService(notification_repo, preferences_repo=preferences_repo)
     await notification_service.create_rescheduled_notification(old_task, task)
     await notification_service.create_deadline_notifications_for_task(task)

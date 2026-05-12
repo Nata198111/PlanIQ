@@ -12,7 +12,14 @@ class TaskResponse(BaseModel):
     complexity: int
     date: str
     time: str
+    scheduled_date: str = ""
+    scheduled_time: str = ""
     duration: str
+
+    priority_score: float = 0.0
+    priority_label: str = ""
+    priority_reason: str = ""
+
     created_at: datetime
     updated_at: datetime | None = None
     completed_at: datetime | None = None
