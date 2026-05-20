@@ -33,6 +33,18 @@ function normalizeTaskDate(value) {
   return getLocalDateKey(value);
 }
 
+function getTaskDisplayDate(task) {
+  return normalizeTaskDate(task.scheduled_date || task.date);
+}
+
+function getTaskDisplayTime(task) {
+  return task.scheduled_time || task.time || '09:00';
+}
+
+function isTaskScheduled(task) {
+  return Boolean(task.scheduled_date && task.scheduled_time);
+}
+
 function sameDay(a, b) {
   return (
     a.getFullYear() === b.getFullYear() &&
@@ -101,13 +113,13 @@ function renderWeekGrid(anchor, hHeight, minH) {
     const isToday = sameDay(currentDate, new Date());
 
     const dayTasks = tasks.filter(task => {
-      return normalizeTaskDate(task.date) === currentDateKey;
+      return getTaskDisplayDate(task) === currentDateKey;
     });
 
     let blocksHtml = '';
 
     dayTasks.forEach(task => {
-      const startStr = task.time || '09:00';
+      const startStr = getTaskDisplayTime(task);
       const [hours, minutes] = startStr.split(':').map(Number);
 
       const safeHours = Number.isFinite(hours) ? hours : 9;
@@ -132,7 +144,7 @@ function renderWeekGrid(anchor, hHeight, minH) {
              style="top:${top}px;height:${height}px;background:${category.color}20;border-left-color:${category.color};"
              data-task="${task.id}">
           <p class="text-[10px] font-bold leading-tight text-white group-hover:text-[#c4c0ff] transition-colors truncate">${task.title}</p>
-          ${height > 40 ? `<p class="text-[8px] font-mono text-[#c7c4d8] mt-1 truncate">${startStr}</p>` : ''}
+          ${height > 40 ? `<p class="text-[8px] font-mono text-[#c7c4d8] mt-1 truncate">${startStr}${isTaskScheduled(task) ? ' · план' : ' · дедлайн'}</p>` : ''}
         </div>`;
     });
 
@@ -206,7 +218,7 @@ function renderMonthGrid(anchor, expanded) {
     const isToday = sameDay(currentDate, new Date());
 
     const dayTasks = tasks.filter(task => {
-      return normalizeTaskDate(task.date) === currentDateKey;
+      return getTaskDisplayDate(task) === currentDateKey;
     });
 
     const bg = isToday

@@ -2,6 +2,7 @@ import { renderAIInsight } from '../components/ai-insight.js';
 import { toast } from '../services/toast.js';
 import { getUser, clearAuth, updateProfileAPI, changePasswordAPI } from '../services/auth.js';
 import { preferencesStore } from '../services/preferences-store.js';
+import { blockedSlotsStore } from '../services/blocked-slots-store.js';
 
 function escapeHTML(value = '') {
   return String(value).replace(/[&<>"']/g, char => ({
@@ -205,6 +206,27 @@ function hoursTab() {
     { label: 'Нд', value: 6 },
   ];
 
+  const blockedSlots = blockedSlotsStore.getAll();
+
+  const blockedSlotsHTML = blockedSlots.length
+    ? blockedSlots.map(slot => {
+        const dayLabel = days.find(d => d.value === slot.day_of_week)?.label || '—';
+
+        return `
+          <div class="flex items-center justify-between gap-3 p-3 rounded-xl bg-[#0d0d18] border border-white/5">
+            <div class="min-w-0">
+              <p class="text-sm font-bold text-white truncate">${escapeHTML(slot.title)}</p>
+              <p class="text-xs text-slate-500 font-mono">${dayLabel} · ${slot.start_time}–${slot.end_time}</p>
+            </div>
+            <button class="delete-blocked-slot p-2 rounded-lg hover:bg-[#f35c7b]/10 text-[#f35c7b]" data-id="${slot.id}">
+              <span class="material-symbols-outlined text-sm">delete</span>
+            </button>
+          </div>`;
+      }).join('')
+    : `<div class="p-4 rounded-xl bg-[#0d0d18] text-sm text-slate-500 text-center">
+        Заблокованих слотів ще немає
+      </div>`;  
+
   const isActiveDay = day => workDays.includes(day);
 
   const activePreset =
@@ -371,7 +393,48 @@ function hoursTab() {
         *Система не буде планувати задачі в цей проміжок.
       </p>
     </div>
+    <div class="bg-[#1b1a26] rounded-3xl p-6 border border-white/5 overflow-hidden">
+      <div class="flex items-center gap-3 mb-6">
+        <span class="material-symbols-outlined text-[#c4c0ff]">block</span>
+        <div>
+          <h3 class="font-bold text-white">Заблоковані слоти</h3>
+          <p class="text-xs text-slate-500">Час, у який система не буде планувати задачі.</p>
+        </div>
+      </div>
 
+      <div class="space-y-3 mb-5">
+        <input
+          id="blocked-title"
+          class="w-full bg-[#0d0d18] border border-white/5 rounded-xl px-4 py-3 text-sm text-white outline-none focus:ring-2 focus:ring-[#c4c0ff]/20"
+          placeholder="Назва, наприклад Англійська" />
+        <select
+          id="blocked-day"
+          class="w-full bg-[#0d0d18] border border-white/5 rounded-xl px-4 py-3 text-sm text-white outline-none focus:ring-2 focus:ring-[#c4c0ff]/20">
+          ${days.map(day => `<option value="${day.value}">${day.label}</option>`).join('')}
+        </select>
+        <div class="grid grid-cols-2 gap-3">
+          <input
+            id="blocked-start"
+            type="time"
+            value="09:00"
+            class="w-full bg-[#0d0d18] border border-white/5 rounded-xl px-4 py-3 text-sm text-white outline-none focus:ring-2 focus:ring-[#c4c0ff]/20" />
+          <input
+            id="blocked-end"
+            type="time"
+            value="10:00"
+            class="w-full bg-[#0d0d18] border border-white/5 rounded-xl px-4 py-3 text-sm text-white outline-none focus:ring-2 focus:ring-[#c4c0ff]/20" />
+        </div>
+        <button
+          id="add-blocked-slot"
+          class="w-full bg-[#292935] hover:bg-[#343440] text-[#c4c0ff] font-bold py-3 rounded-xl transition-all active:scale-95 flex items-center justify-center gap-2">
+          <span class="material-symbols-outlined text-sm">add</span>
+          Додати заблокований слот
+        </button>
+      </div>
+      <div id="blocked-slots-list" class="space-y-3">
+        ${blockedSlotsHTML}
+      </div>
+    </div>
     <button class="w-full bg-[#c4c0ff] hover:bg-[#8781ff] text-[#2000a4] font-bold py-4 rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-2xl glow-primary" id="save-hours">
       <span class="material-symbols-outlined">save</span>
       Зберегти налаштування
@@ -724,6 +787,9 @@ export async function initSettings() {
   if (!preferencesStore.isLoaded()) {
     await preferencesStore.load();
   }
+  if (!blockedSlotsStore.isLoaded()) {
+      await blockedSlotsStore.load();
+  }
 
   function parseHour(timeStr, fallback = 9) {
     if (!timeStr) return fallback;
@@ -1048,6 +1114,67 @@ export async function initSettings() {
           }
         });
       }
+
+      const addBlockedSlot = document.getElementById('add-blocked-slot');
+
+      if (addBlockedSlot) {
+        addBlockedSlot.addEventListener('click', async () => {
+          const title = document.getElementById('blocked-title')?.value?.trim() || '';
+          const day = parseInt(document.getElementById('blocked-day')?.value || '0', 10);
+          const start = document.getElementById('blocked-start')?.value || '09:00';
+          const end = document.getElementById('blocked-end')?.value || '10:00';
+
+          if (!title) {
+            toast('Вкажи назву заблокованого слота', 'error');
+            return;
+          }
+
+          if (start >= end) {
+            toast('Час завершення має бути пізніше за початок', 'error');
+            return;
+          }
+
+          addBlockedSlot.disabled = true;
+          addBlockedSlot.textContent = 'Додаємо...';
+
+          try {
+            await blockedSlotsStore.addSlot({
+              title,
+              day_of_week: day,
+              start_time: start,
+              end_time: end,
+              color: '#4ddada',
+            });
+
+            toast('Заблокований слот додано', 'success');
+            showTab('hours');
+          } catch (err) {
+            console.error('Add blocked slot error:', err);
+            toast(err.message || 'Не вдалося додати слот', 'error');
+          } finally {
+            addBlockedSlot.disabled = false;
+            addBlockedSlot.innerHTML = '<span class="material-symbols-outlined text-sm">add</span> Додати заблокований слот';
+          }
+        });
+      }
+
+      document.querySelectorAll('.delete-blocked-slot').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const id = btn.dataset.id;
+          if (!id) return;
+
+          btn.disabled = true;
+
+          try {
+            await blockedSlotsStore.deleteSlot(id);
+            toast('Заблокований слот видалено', 'success');
+            showTab('hours');
+          } catch (err) {
+            console.error('Delete blocked slot error:', err);
+            toast(err.message || 'Не вдалося видалити слот', 'error');
+          }
+        });
+      });
 
       const saveHours = document.getElementById('save-hours');
       if (saveHours) {

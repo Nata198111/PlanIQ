@@ -241,8 +241,8 @@ export async function initCalendar() {
     document.getElementById('cal-drawer-cat').style.color = category.color;
 
     document.getElementById('cal-drawer-pri').textContent = task.priority || '—';
-    document.getElementById('cal-drawer-date').textContent = task.date || '—';
-    document.getElementById('cal-drawer-time').textContent = task.time || '—';
+    document.getElementById('cal-drawer-date').textContent = task.scheduled_date ? `План: ${task.scheduled_date} · Дедлайн: ${task.date || '—'}` : task.date || '—';
+    document.getElementById('cal-drawer-time').textContent = task.scheduled_time ? `План: ${task.scheduled_time} · Дедлайн: ${task.time || '—'}` : task.time || '—';
 
     document.getElementById('cal-drawer-cx-bar').style.width = `${(task.complexity || 0) * 10}%`;
     document.getElementById('cal-drawer-cx-val').textContent = `${task.complexity || 0}/10`;

@@ -1,5 +1,6 @@
 // frontend/src/services/task-store.js
 import { taskApi } from './task-api.js';
+import { planningApi } from './planning-api.js';
 import { preferencesStore, DEFAULT_CATEGORIES } from './preferences-store.js';
 import { notificationsStore } from './notifications-store.js';
 
@@ -36,6 +37,22 @@ class TaskStore {
       console.warn('Failed to refresh notifications:', err);
     });
   }
+
+  _upsertTask(task) {
+    if (!task) return;
+
+    const idx = this._tasks.findIndex(t => t.id === task.id);
+
+    if (idx !== -1) {
+      this._tasks[idx] = task;
+    } else {
+      this._tasks.push(task);
+    }
+  }
+
+  _upsertTasks(tasks = []) {
+    tasks.forEach(task => this._upsertTask(task));
+  }  
 
   // ── API методи ────────────────────────────────────────────────
 
@@ -74,6 +91,28 @@ class TaskStore {
     this._tasks = this._tasks.filter(t => t.id !== id);
     this._notify();
     this._refreshNotifications();
+  }
+
+  async scheduleTasks(daysAhead = 7) {
+    const result = await planningApi.schedule(daysAhead);
+
+    this._upsertTasks(result.scheduled || []);
+    this._notify();
+    this._refreshNotifications();
+
+    return result;
+  }
+
+  async rescheduleTask(id) {
+    const task = await planningApi.reschedule(id);
+
+    if (task) {
+      this._upsertTask(task);
+      this._notify();
+      this._refreshNotifications();
+    }
+
+    return task;
   }
 
   // ── Синхронні геттери ──────────────────────────────────────────

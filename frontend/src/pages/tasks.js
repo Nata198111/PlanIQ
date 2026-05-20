@@ -30,6 +30,7 @@ function renderItem(t) {
   const isDone = t.status === 'Виконано';
   const cat    = CATEGORIES[t.category] || { label: t.category, color: '#c4c0ff' };
   const stCls  = STATUS_CFG[t.status] || STATUS_CFG['Очікує'];
+  const hasSchedule = t.scheduled_date && t.scheduled_time;
 
   return `<div class="task-item group relative flex items-center gap-4 p-4 rounded-xl border border-transparent bg-[#1b1a26] hover:bg-[#1f1e2a] hover:border-[#c4c0ff]/10 transition-all glow-hover ${isDone ? 'opacity-50' : ''}" data-id="${t.id}">
   <div class="flex-shrink-0"><button class="task-check w-6 h-6 rounded-full border-2 border-[#c4c0ff]/40 flex items-center justify-center transition-colors ${isDone ? 'bg-[#c4c0ff] border-transparent' : ''}">${isDone ? '<span class="material-symbols-outlined text-[14px] text-[#12121d] font-bold">check</span>' : ''}</button></div>
@@ -37,7 +38,7 @@ function renderItem(t) {
     <div class="flex items-center gap-3 mb-1"><h4 class="font-bold truncate text-white ${isDone ? 'line-through opacity-50' : ''}">${t.title}</h4><span class="px-2 py-0.5 rounded-full text-[10px] font-bold font-mono" style="background:${cat.color}15;color:${cat.color}">${cat.label}</span></div>
     <div class="flex flex-wrap items-center gap-x-4 text-xs text-slate-500">
       <div class="flex items-center gap-1.5"><span class="material-symbols-outlined text-sm">psychology</span><span>${t.complexity}/10</span></div>
-      <div class="flex items-center gap-1.5"><span class="material-symbols-outlined text-sm">event</span><span>${fmtDt(t.date)}</span></div>
+      <div class="flex items-center gap-1.5"><span class="material-symbols-outlined text-sm">event</span><span>Дедлайн: ${fmtDt(t.date)}${t.time ? ` о ${t.time}` : ''}</span></div>${hasSchedule ? `<div class="flex items-center gap-1.5 text-[#4ddada]"><span class="material-symbols-outlined text-sm">event_available</span><span>План: ${fmtDt(t.scheduled_date)} о ${t.scheduled_time}</span></div>` : ''}
       <div class="flex items-center gap-1.5"><span class="material-symbols-outlined text-sm">schedule</span><span>${t.duration}</span></div>
     </div>
   </div>
@@ -113,6 +114,7 @@ export function renderTasks() {
       <input id="task-search" class="w-full bg-[#1b1a26] border-none rounded-xl py-3 pl-12 pr-4 text-sm text-white placeholder:text-slate-500 focus:ring-2 focus:ring-[#c4c0ff]/20 transition-all outline-none" placeholder="🔍 Пошук задач..." />
     </div>
     <div class="flex gap-3">
+      <button id="schedule-tasks-btn" class="flex items-center gap-2 px-4 py-2 bg-[#c4c0ff] hover:bg-[#8781ff] text-[#2000a4] rounded-lg text-xs font-bold transition-all active:scale-95"><span class="material-symbols-outlined text-sm">auto_awesome</span>Запланувати</button>  
       ${['status','complexity','deadline'].map(f => `<div class="relative"><button class="dropdown-trigger flex items-center gap-2 px-4 py-2 bg-[#1b1a26] hover:bg-[#292935] rounded-lg text-xs font-medium text-slate-300 transition-colors capitalize" data-type="${f}">${f === 'status' ? 'Статус' : f === 'complexity' ? 'Складність' : 'Дедлайн'} <span class="material-symbols-outlined text-sm">expand_more</span></button><div class="dropdown-menu absolute left-0 top-full mt-2 w-48 bg-[#292935] border border-white/5 rounded-xl shadow-xl hidden z-50 overflow-hidden" id="f-${f}"></div></div>`).join('')}
     </div>
   </div>
@@ -137,7 +139,7 @@ export function renderTasks() {
       <div><span class="text-[10px] font-bold text-[#c7c4d8] uppercase block mb-1 tracking-wider">Складність</span><div class="flex items-center gap-3"><div class="flex-1 h-2 bg-[#343440] rounded-full overflow-hidden"><div class="h-full bg-[#c4c0ff] transition-all" id="drawer-cx-bar"></div></div><span id="drawer-cx-val" class="text-xs font-mono text-[#c4c0ff]"></span></div></div>
       <div><span class="text-[10px] font-bold text-[#c7c4d8] uppercase block mb-2 tracking-wider">Статус</span><div class="flex flex-wrap gap-2" id="drawer-status-group"></div></div>
       ${renderTaskAIActions('task-drawer')}
-      <div class="flex gap-3 pt-3 border-t border-white/5"><button id="drawer-edit-btn" class="flex-1 flex items-center justify-center gap-2 bg-[#292935] text-white py-3 rounded-xl font-bold text-sm hover:bg-[#343440]"><span class="material-symbols-outlined text-sm">edit</span>Редагувати</button><button id="drawer-del-btn" class="p-3 bg-[#292935] text-[#f35c7b] rounded-xl hover:bg-[#f35c7b]/10"><span class="material-symbols-outlined text-sm">delete</span></button></div>
+      <div class="flex gap-3 pt-3 border-t border-white/5"><button id="drawer-reschedule-btn" class="flex-1 flex items-center justify-center gap-2 bg-[#1b1a26] border border-[#c4c0ff]/20 text-[#c4c0ff] py-3 rounded-xl font-bold text-sm hover:bg-[#c4c0ff]/10"><span class="material-symbols-outlined text-sm">event_repeat</span>Перепланувати</button><button id="drawer-edit-btn" class="flex-1 flex items-center justify-center gap-2 bg-[#292935] text-white py-3 rounded-xl font-bold text-sm hover:bg-[#343440]"><span class="material-symbols-outlined text-sm">edit</span>Редагувати</button><button id="drawer-del-btn" class="p-3 bg-[#292935] text-[#f35c7b] rounded-xl hover:bg-[#f35c7b]/10"><span class="material-symbols-outlined text-sm">delete</span></button></div>
     </div>
     <div id="drawer-edit-mode" class="hidden">
        <div id="drawer-form-container"></div>
@@ -236,8 +238,8 @@ export async function initTasks() {
     const cat = CATEGORIES[t.category] || { label: t.category, color: '#c4c0ff' };
     document.getElementById('drawer-cat').textContent      = cat.label;
     document.getElementById('drawer-cat').style.color      = cat.color;
-    document.getElementById('drawer-pri').textContent      = t.priority;
-    document.getElementById('drawer-datetime').textContent = `${fmtDt(t.date)} о ${t.time}`;
+    document.getElementById('drawer-pri').textContent      = t.priority_label ? `${t.priority} · ${t.priority_label} (${t.priority_score})` : t.priority;
+    document.getElementById('drawer-datetime').textContent = t.scheduled_date && t.scheduled_time ? `Дедлайн: ${fmtDt(t.date)} о ${t.time} · План: ${fmtDt(t.scheduled_date)} о ${t.scheduled_time}` : `${fmtDt(t.date)} о ${t.time}`;
     document.getElementById('drawer-duration').textContent = t.duration;
     document.getElementById('drawer-cx-bar').style.width   = `${t.complexity * 10}%`;
     document.getElementById('drawer-cx-val').textContent   = `${t.complexity}/10`;
@@ -273,6 +275,28 @@ export async function initTasks() {
   document.getElementById('drawer-overlay').onclick  = closeDrawer;
   document.getElementById('drawer-edit-btn').onclick = () => openDrawer(curId, true);
   document.getElementById('drawer-cancel').onclick   = () => openDrawer(curId, false);
+  document.getElementById('drawer-reschedule-btn').onclick = async () => {
+    if (!curId) return;
+    const btn = document.getElementById('drawer-reschedule-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="material-symbols-outlined text-sm">hourglass_top</span>Плануємо...';
+    try {
+      const task = await taskStore.rescheduleTask(curId);
+      if (!task) {
+        toast('Не вдалося знайти вільний слот до дедлайну', 'info');
+        return;
+      }
+      openDrawer(curId, false);
+      render();
+      toast('Задачу переплановано', 'success');
+    } catch (err) {
+      console.error('Reschedule error:', err);
+      toast(err.message || 'Не вдалося перепланувати задачу', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<span class="material-symbols-outlined text-sm">event_repeat</span>Перепланувати';
+    }
+  };
 
   document.getElementById('drawer-save').onclick = async () => {
     if (formInstance.isValid()) {
@@ -321,6 +345,34 @@ export async function initTasks() {
 
   // ── 6. Пошук ───────────────────────────────────────────────
   document.getElementById('task-search').addEventListener('input', e => { query = e.target.value.toLowerCase(); render(); });
+
+  const scheduleTasksBtn = document.getElementById('schedule-tasks-btn');
+
+  if (scheduleTasksBtn) {
+    scheduleTasksBtn.addEventListener('click', async () => {
+      scheduleTasksBtn.disabled = true;
+      scheduleTasksBtn.innerHTML = '<span class="material-symbols-outlined text-sm">hourglass_top</span> Плануємо...';
+      try {
+        const result = await taskStore.scheduleTasks(7);
+        render();
+        if (result.scheduled_count > 0) {
+          toast(`Заплановано ${result.scheduled_count} задач`, 'success');
+        } else {
+          toast('Немає задач, які вдалося запланувати', 'info');
+        }
+        if (result.warnings?.length) {
+          console.warn('Planning warnings:', result.warnings);
+          toast(result.warnings[0], 'info');
+        }
+      } catch (err) {
+        console.error('Planning error:', err);
+        toast(err.message || 'Не вдалося запланувати задачі', 'error');
+      } finally {
+        scheduleTasksBtn.disabled = false;
+        scheduleTasksBtn.innerHTML = '<span class="material-symbols-outlined text-sm">auto_awesome</span> Запланувати';
+      }
+    });
+  }
 
   // ── 7. Модалка нової задачі ────────────────────────────────
   const modal = document.getElementById('new-task-modal');
