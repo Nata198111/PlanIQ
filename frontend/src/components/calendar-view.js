@@ -45,6 +45,18 @@ function isTaskScheduled(task) {
   return Boolean(task.scheduled_date && task.scheduled_time);
 }
 
+function getCalendarTasks() {
+  const tasks = taskStore.getAll();
+
+  const parentIdsWithSubtasks = new Set(
+    tasks
+      .map(task => task.parent_task_id)
+      .filter(Boolean)
+  );
+
+  return tasks.filter(task => !parentIdsWithSubtasks.has(task.id));
+}
+
 function sameDay(a, b) {
   return (
     a.getFullYear() === b.getFullYear() &&
@@ -92,7 +104,7 @@ function renderWeekGrid(anchor, hHeight, minH) {
         </div>`;
   }
 
-  const tasks = taskStore.getAll();
+  const tasks = getCalendarTasks();
 
   let timeColumnHtml =
     `<div class="border-r border-[#464555]/10 text-[9px] font-mono text-[#c7c4d8]/60 flex flex-col justify-between py-2 text-right pr-2">`;
@@ -197,7 +209,7 @@ function renderMonthGrid(anchor, expanded) {
   firstDay--;
 
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const tasks = taskStore.getAll();
+  const tasks = getCalendarTasks();
 
   let html = `
     <div class="${expanded ? 'p-8' : 'p-4'} h-full flex flex-col">

@@ -15,6 +15,8 @@ class TaskResponse(BaseModel):
     scheduled_date: str = ""
     scheduled_time: str = ""
     duration: str
+    parent_task_id: str = ""
+    sequence_order: int = 0
 
     priority_score: float = 0.0
     priority_label: str = ""

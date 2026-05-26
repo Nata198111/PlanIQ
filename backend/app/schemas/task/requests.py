@@ -13,6 +13,8 @@ class CreateTaskRequest(BaseModel):
     scheduled_date: str = ""
     scheduled_time: str = ""
     duration: str = "1 год"
+    parent_task_id: str = ""
+    sequence_order: int = 0
 
     @field_validator("title")
     @classmethod
@@ -41,3 +43,5 @@ class UpdateTaskRequest(BaseModel):
     scheduled_date: str | None = None
     scheduled_time: str | None = None
     duration: str | None = None
+    parent_task_id: str | None = None
+    sequence_order: int | None = None

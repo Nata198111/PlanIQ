@@ -415,7 +415,7 @@ export async function initDashboard() {
       document.getElementById('drawer-form-container').innerHTML = renderTaskForm(t);
       formInstance = initTaskForm(document.getElementById('drawer-form-container'), t, document.getElementById('drawer-save'));
     }
-    initTaskAIActions('dash-drawer');
+    initTaskAIActions('dash-drawer', taskId, callback);
     drawer.classList.remove('translate-x-full');
     overlay.classList.remove('hidden');
     setTimeout(() => overlay.classList.remove('opacity-0'), 10);

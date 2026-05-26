@@ -19,6 +19,9 @@ class Task:
     scheduled_time: str = ""  # час, коли система радить виконувати
     duration: str = "1 год"
 
+    parent_task_id: str = ""   # id батьківської задачі (якщо це підзадача)
+    sequence_order: int = 0    # порядок виконання серед підзадач
+    
     priority_score: float = 0.0
     priority_label: str = ""    # Критичний | Високий | Середній | Низький
     priority_reason: str = ""   # Пояснення чому такий пріоритет

@@ -206,10 +206,7 @@ class PlanningService:
         start_date: date | None = None,
         days_ahead: int = 7,
     ) -> PlanningResult:
-        """
-        Основний метод планування.
-        Розкладає всі невиконані задачі на найближчі days_ahead днів.
-        """
+ 
         if start_date is None:
             start_date = date.today()
 
@@ -220,12 +217,19 @@ class PlanningService:
             prefs = UserPreferences(user_id=user_id)
 
         all_tasks = await self.task_repo.get_all_by_user(user_id)
+
+        parent_ids_with_subtasks = {
+            t.parent_task_id
+            for t in all_tasks
+            if t.parent_task_id
+        }
         blocked_slots = await self.blocked_slot_repo.get_all_by_user(user_id)
 
         # Беремо тільки невиконані задачі
         tasks_to_plan = [
             t for t in all_tasks
             if t.status not in ("Виконано",)
+            and t.id not in parent_ids_with_subtasks
         ]
 
         # Розраховуємо priority_score для кожної
@@ -377,12 +381,9 @@ class PlanningService:
         self,
         task_id: str,
         user_id: str,
-        days_ahead: int = 14,
-    ) -> Task | None:
-        """
-        Перепланування конкретної задачі.
-        Знаходить найближчий вільний слот не конфліктуючи з іншими.
-        """
+        earliest_start: datetime | None = None,
+        days_ahead: int = 7,
+    ):
         prefs = await self.preferences_repo.get_by_user_id(user_id)
         if not prefs:
             from app.domain.models.preferences import UserPreferences
@@ -390,9 +391,20 @@ class PlanningService:
 
         all_tasks = await self.task_repo.get_all_by_user(user_id)
         blocked_slots = await self.blocked_slot_repo.get_all_by_user(user_id)
+        parent_ids_with_subtasks = {
+            t.parent_task_id
+            for t in all_tasks
+            if t.parent_task_id
+        }
 
         task = next((t for t in all_tasks if t.id == task_id), None)
         if not task:
+            return None
+        
+        if task.id in parent_ids_with_subtasks:
+            task.scheduled_date = ""
+            task.scheduled_time = ""
+            await self.task_repo.update(task)
             return None
 
         # Збираємо зайняті слоти інших задач
@@ -402,7 +414,7 @@ class PlanningService:
             plan_date = t.scheduled_date or t.date
             plan_time = t.scheduled_time or t.time
 
-            if t.id == task_id or t.status == "Виконано" or not plan_date or not plan_time:
+            if t.id == task_id or t.status == "Виконано" or t.id in parent_ids_with_subtasks or not plan_date or not plan_time:
                 continue
             dur = int(_parse_duration_minutes(t.duration) * prefs.reality_coefficient)
             start_min = _time_to_minutes(plan_time)
@@ -447,9 +459,24 @@ class PlanningService:
 
             day_work_start = work_start
             day_work_end = work_end
+
             if target_date == date.today():
                 current_minutes = datetime.now().hour * 60 + datetime.now().minute
                 day_work_start = max(work_start, _round_up_to_step(current_minutes))
+
+            if earliest_start:
+                earliest_date = earliest_start.date()
+                earliest_minutes = earliest_start.hour * 60 + earliest_start.minute
+
+                if target_date < earliest_date:
+                    continue
+
+                if target_date == earliest_date:
+                    day_work_start = max(
+                        day_work_start,
+                        _round_up_to_step(earliest_minutes),
+                    )
+
             if (
                 deadline_is_relevant
                 and deadline_date
@@ -457,7 +484,8 @@ class PlanningService:
                 and target_date == deadline_date
             ):
                 day_work_end = min(work_end, deadline_minutes)
-            if day_work_start >= work_end:
+
+            if day_work_start >= day_work_end:
                 continue
 
             slot_start = _find_free_slot(

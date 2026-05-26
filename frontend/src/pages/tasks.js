@@ -232,6 +232,7 @@ export async function initTasks() {
     curId = id;
     const t = taskStore.getById(id);
     if (!t) return;
+    const hasSubtasks = taskStore.getAll().some(task => task.parent_task_id === t.id);
 
     document.getElementById('drawer-title').textContent    = t.title;
     document.getElementById('drawer-desc').textContent     = t.description || 'Опис відсутній';
@@ -259,7 +260,18 @@ export async function initTasks() {
       document.getElementById('drawer-form-container').innerHTML = renderTaskForm(t);
       formInstance = initTaskForm(document.getElementById('drawer-form-container'), t, document.getElementById('drawer-save'));
     }
-    initTaskAIActions('task-drawer');
+    const rescheduleBtn = document.getElementById('drawer-reschedule-btn');
+
+    if (rescheduleBtn) {
+      rescheduleBtn.classList.toggle('hidden', hasSubtasks);
+    }
+    initTaskAIActions('task-drawer', curId, () => {
+      render();
+
+      if (curId) {
+        openDrawer(curId, false);
+      }
+    });
     document.getElementById('task-drawer').classList.remove('translate-x-full');
     document.getElementById('drawer-overlay').classList.remove('hidden');
     setTimeout(() => document.getElementById('drawer-overlay').classList.remove('opacity-0'), 10);

@@ -295,7 +295,7 @@ export async function initCalendar() {
       );
     }
 
-    initTaskAIActions('cal-drawer');
+    initTaskAIActions('cal-drawer', curTid, () => refreshCalendar());
 
     drawer.classList.remove('translate-x-full');
     overlay.classList.remove('hidden');

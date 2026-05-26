@@ -35,11 +35,14 @@ def _to_response(task: Task) -> TaskResponse:
         scheduled_date=task.scheduled_date,
         scheduled_time=task.scheduled_time,
         duration=task.duration,
+        parent_task_id=task.parent_task_id,
+        sequence_order=task.sequence_order,
         priority_score=task.priority_score,
         priority_label=task.priority_label,
         priority_reason=task.priority_reason,
         created_at=task.created_at,
         updated_at=task.updated_at,
+        completed_at=task.completed_at,
     )
 
 
@@ -77,6 +80,8 @@ async def create_task(
         scheduled_date=body.scheduled_date,
         scheduled_time=body.scheduled_time,
         duration=body.duration,
+        parent_task_id=body.parent_task_id,
+        sequence_order=body.sequence_order,
     )
     apply_priority_score(task)
     await task_repo.update(task)
