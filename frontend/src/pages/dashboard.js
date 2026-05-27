@@ -5,6 +5,7 @@ import { registerCleanup } from '../utils/cleanup.js';
 import { taskStore, CATEGORIES } from '../services/task-store.js';
 import { renderTaskForm, initTaskForm } from '../components/task-form.js';
 import { renderCalendarView, initCalendarView } from '../components/calendar-view.js';
+import { blockedSlotsStore } from '../services/blocked-slots-store.js';
 
 const MOCK_TODAY = new Date();
 const MONTHS_UA = ['СІЧЕНЬ','ЛЮТИЙ','БЕРЕЗЕНЬ','КВІТЕНЬ','ТРАВЕНЬ','ЧЕРВЕНЬ','ЛИПЕНЬ','СЕРПЕНЬ','ВЕРЕСЕНЬ','ЖОВТЕНЬ','ЛИСТОПАД','ГРУДЕНЬ'];
@@ -301,7 +302,7 @@ export async function initDashboard() {
       b.className = `cal-mode-btn ${b.dataset.view === ds.calMode ? 'bg-[#343440] text-white shadow' : 'text-[#c7c4d8] hover:text-white'} px-4 py-1.5 rounded-lg text-[11px] uppercase font-bold transition-all`;
     });
 
-    if (calBody) calBody.innerHTML = renderCalendarView({ anchorDate: ds.anchor, viewMode: ds.calMode, expanded: false });
+    if (calBody) calBody.innerHTML = renderCalendarView({ anchorDate: ds.anchor, viewMode: ds.calMode, expanded: false, blockedSlots: blockedSlotsStore.getAll() });
     if (calLabelEl) calLabelEl.textContent = calLabel();
 
     const priList = document.getElementById('pri-list');
@@ -415,7 +416,7 @@ export async function initDashboard() {
       document.getElementById('drawer-form-container').innerHTML = renderTaskForm(t);
       formInstance = initTaskForm(document.getElementById('drawer-form-container'), t, document.getElementById('drawer-save'));
     }
-    initTaskAIActions('dash-drawer', taskId, callback);
+    initTaskAIActions('dash-drawer', id, () => {openDrawer(id); });
     drawer.classList.remove('translate-x-full');
     overlay.classList.remove('hidden');
     setTimeout(() => overlay.classList.remove('opacity-0'), 10);
@@ -458,7 +459,7 @@ export async function initDashboard() {
 
   // ── 7. Завантажуємо задачі з API ───────────────────────────
   try {
-    await taskStore.loadFromAPI();
+    await Promise.all([taskStore.loadFromAPI(), blockedSlotsStore.load()]);
     refreshDashboard();
   } catch (err) {
     console.error('Не вдалося завантажити задачі:', err);

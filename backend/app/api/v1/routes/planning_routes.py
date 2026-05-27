@@ -10,6 +10,9 @@ from app.api.v1.dependencies.blocked_slot_deps import get_blocked_slot_repositor
 from app.application.services.planning_service import PlanningService
 from app.domain.models.user import User
 from app.schemas.task.responses import TaskResponse
+from app.api.v1.dependencies.preferences_deps import get_notification_repository
+from app.application.services.notification_service import NotificationService
+from app.ports.repositories.notification_repository import NotificationRepository
 
 
 router = APIRouter(prefix="/planning", tags=["Planning"])
@@ -51,6 +54,7 @@ async def schedule_tasks(
     task_repo=Depends(get_task_repository),
     preferences_repo=Depends(get_preferences_repository),
     blocked_slot_repo=Depends(get_blocked_slot_repository),
+    notification_repo: NotificationRepository = Depends(get_notification_repository),
 ):
     """
     Розкласти всі невиконані задачі по вільних слотах.
@@ -62,6 +66,13 @@ async def schedule_tasks(
         start_date=body.start_date,
         days_ahead=body.days_ahead,
     )
+    notification_service = NotificationService(
+        notification_repo,
+        preferences_repo=preferences_repo,
+    )
+    for task in result.scheduled:
+        await notification_service.create_deadline_notifications_for_task(task)
+
     return {
         "scheduled_count": len(result.scheduled),
         "scheduled": [_task_to_response(t) for t in result.scheduled],
@@ -77,11 +88,14 @@ async def reschedule_task(
     task_repo=Depends(get_task_repository),
     preferences_repo=Depends(get_preferences_repository),
     blocked_slot_repo=Depends(get_blocked_slot_repository),
+    notification_repo: NotificationRepository = Depends(get_notification_repository),
 ):
-    """
-    Перепланувати конкретну задачу.
-    Знаходить найближчий вільний слот не конфліктуючи з іншими задачами.
-    """
     service = PlanningService(task_repo, preferences_repo, blocked_slot_repo)
     task = await service.reschedule_task(task_id, current_user.id)
+    if task:
+        notification_service = NotificationService(
+            notification_repo,
+            preferences_repo=preferences_repo,
+        )
+        await notification_service.create_deadline_notifications_for_task(task)
     return _task_to_response(task) if task else None

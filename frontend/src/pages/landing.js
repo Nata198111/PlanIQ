@@ -10,8 +10,8 @@ export function renderLanding() {
     </div>
     <div class="hidden md:flex items-center gap-8 font-bold text-lg tracking-wide">
       <a class="text-[#6C63FF] font-semibold hover:drop-shadow-[0_0_8px_rgba(108,99,255,0.5)] transition-all active:scale-95 duration-200" href="#/landing">Головна</a>
-      <a class="text-slate-400 hover:text-[#6C63FF] hover:drop-shadow-[0_0_8px_rgba(108,99,255,0.5)] transition-all active:scale-95 duration-200" href="#">Про нас</a>
-      <a class="text-slate-400 hover:text-[#6C63FF] hover:drop-shadow-[0_0_8px_rgba(108,99,255,0.5)] transition-all active:scale-95 duration-200" href="#">Тарифи</a>
+      <a class="..." href="#" onclick="document.getElementById('about')?.scrollIntoView({behavior:'smooth'});return false;">Про проєкт</a>
+      <a class="..." href="#" onclick="document.getElementById('features')?.scrollIntoView({behavior:'smooth'});return false;">Можливості</a>
     </div>
     <div class="flex items-center gap-4">
       <a href="#/login" class="text-slate-400 font-medium hover:text-white transition-colors active:scale-95 duration-200 px-4 py-2">Увійти</a>
@@ -42,7 +42,7 @@ export function renderLanding() {
       </p>
       <div class="flex flex-col sm:flex-row items-center justify-center gap-6 pt-8">
         <a href="#/register" class="group relative px-8 py-4 bg-[#c4c0ff] text-[#2000a4] font-bold text-lg rounded-3xl hover:shadow-[0_0_30px_rgba(108,99,255,0.5)] transition-all duration-300 active:scale-95 inline-block">
-          Розпочати безкоштовно
+          Спробувати
           <span class="absolute inset-0 rounded-3xl bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></span>
         </a>
         <a href="#/login" class="px-8 py-4 bg-[#292935] text-white font-bold text-lg rounded-3xl hover:bg-[#343440] transition-all active:scale-95 inline-block">
@@ -50,13 +50,13 @@ export function renderLanding() {
         </a>
       </div>
     </div>
-    <div class="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-slate-500">
+    <div class="flex flex-col items-center gap-2 text-slate-500 pt-12 pb-4">
       <span class="font-mono text-[10px] uppercase tracking-widest">Дослідити</span>
       <span class="material-symbols-outlined animate-bounce">expand_more</span>
     </div>
   </section>
 
-  <section class="max-w-7xl mx-auto px-6 py-24">
+  <section id="features" class="max-w-7xl mx-auto px-6 py-24">
     <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
       <div class="group relative p-8 rounded-3xl bg-[#1b1a26] hover:bg-[#1f1e2a] transition-all duration-500 overflow-hidden glow-effect">
         <div class="absolute -right-8 -top-8 w-32 h-32 bg-[#c4c0ff]/5 rounded-full group-hover:scale-150 transition-transform duration-700"></div>
@@ -86,11 +86,11 @@ export function renderLanding() {
         <div class="absolute -right-8 -top-8 w-32 h-32 bg-[#ffb2bc]/5 rounded-full group-hover:scale-150 transition-transform duration-700"></div>
         <div class="relative z-10 space-y-6">
           <div class="w-14 h-14 rounded-2xl bg-[#f35c7b]/20 flex items-center justify-center">
-            <span class="material-symbols-outlined text-[#ffb2bc] text-3xl" style="font-variation-settings: 'FILL' 1;">psychology</span>
+            <span class="material-symbols-outlined text-[#ffb2bc] text-3xl" style="font-variation-settings: 'FILL' 1;">hub</span>
           </div>
-          <h3 class="text-2xl font-bold text-white tracking-tight">Адаптація</h3>
+          <h3 class="text-2xl font-bold text-white tracking-tight">AI декомпозиція</h3>
           <p class="text-[#c7c4d8] leading-relaxed">
-            Система навчається твоєму темпу роботи та автоматично коригує дедлайни під твої можливості.
+            Розбивай складні задачі на підзадачі автоматично. Штучний інтелект аналізує завдання і пропонує структурований план виконання.
           </p>
         </div>
       </div>
@@ -98,44 +98,60 @@ export function renderLanding() {
   </section>
 
   <section class="max-w-7xl mx-auto px-6 py-24 border-t border-white/5">
-    <div class="flex flex-col lg:flex-row items-center gap-16">
-      <div class="flex-1 space-y-8">
-        <div class="space-y-4">
-          <h2 class="text-4xl md:text-5xl font-black text-white leading-tight">Простір для глибокої концентрації</h2>
-          <div class="h-1 w-24 bg-[#c4c0ff] rounded-full"></div>
+    <div class="text-center mb-16 space-y-4">
+      <h2 class="text-4xl md:text-5xl font-black text-white">Як це працює</h2>
+      <div class="h-1 w-24 bg-[#c4c0ff] rounded-full mx-auto"></div>
+      <p class="text-lg text-slate-400 max-w-xl mx-auto">Три кроки до структурованого робочого дня</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
+      <!-- Лінія між кроками -->
+      <div class="hidden md:block absolute top-10 left-1/4 right-1/4 h-0.5 bg-gradient-to-r from-[#c4c0ff]/0 via-[#c4c0ff]/30 to-[#c4c0ff]/0"></div>
+
+      <div class="relative p-8 rounded-3xl bg-[#1b1a26] border border-white/5 text-center space-y-5">
+        <div class="w-16 h-16 rounded-2xl bg-[#c4c0ff]/20 flex items-center justify-center mx-auto">
+          <span class="material-symbols-outlined text-[#c4c0ff] text-3xl" style="font-variation-settings: 'FILL' 1;">add_task</span>
         </div>
-        <p class="text-xl text-slate-400 font-medium">
-          Ми відмовилися від хаотичних інтерфейсів на користь чистоти та фокусу. Ваш робочий день стає візуальною історією вашого успіху.
-        </p>
-        <div class="p-6 rounded-2xl bg-[#343440] border-l-2 border-[#4ddada]/50 glow-effect">
-          <div class="flex items-start gap-4">
-            <span class="material-symbols-outlined text-[#4ddada] pt-1">lightbulb</span>
-            <div class="space-y-1">
-              <span class="font-mono text-xs text-[#4ddada] uppercase tracking-widest">AI Insight</span>
-              <p class="text-white font-medium italic">"Сьогодні ваш пік продуктивності очікується між 10:00 та 12:00. Ми забронювали цей час для вашого головного проекту."</p>
-            </div>
-          </div>
-        </div>
+        <div class="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-[#c4c0ff] text-[#2000a4] font-black text-sm flex items-center justify-center shadow-lg">1</div>
+        <h3 class="text-xl font-bold text-white">Додай задачі</h3>
+        <p class="text-slate-400 leading-relaxed">Створи задачі з дедлайнами, пріоритетами та тривалістю. Або розбий складну задачу на підзадачі через AI.</p>
       </div>
-      <div class="flex-1 w-full aspect-square relative">
-        <div class="absolute inset-0 bg-[#c4c0ff]/20 blur-[100px] rounded-full"></div>
-        <div class="relative w-full h-full rounded-[2rem] overflow-hidden border border-white/10 glass-panel shadow-2xl flex items-center justify-center">
-          <div class="text-center space-y-4 p-12">
-            <span class="material-symbols-outlined text-[#6C63FF] text-8xl" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
-            <p class="text-2xl font-bold text-white">Інтелектуальне планування</p>
-            <p class="text-slate-400">Ваш AI-асистент, що працює 24/7</p>
-          </div>
-          <div class="absolute inset-0 bg-gradient-to-tr from-[#12121d] via-transparent to-transparent"></div>
-          <div class="absolute bottom-8 left-8 p-6 glass-panel rounded-2xl border border-white/5 max-w-xs">
-            <div class="flex gap-2 mb-2">
-              <div class="w-8 h-1 bg-[#4ddada] rounded-full"></div>
-              <div class="w-4 h-1 bg-white/20 rounded-full"></div>
-              <div class="w-4 h-1 bg-white/20 rounded-full"></div>
-            </div>
-            <p class="text-sm font-bold text-white">Автоматична реструктуризація дня...</p>
-          </div>
+
+      <div class="relative p-8 rounded-3xl bg-[#1b1a26] border border-white/5 text-center space-y-5">
+        <div class="w-16 h-16 rounded-2xl bg-[#4ddada]/20 flex items-center justify-center mx-auto">
+          <span class="material-symbols-outlined text-[#4ddada] text-3xl" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
         </div>
+        <div class="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-[#4ddada] text-[#0d0d18] font-black text-sm flex items-center justify-center shadow-lg">2</div>
+        <h3 class="text-xl font-bold text-white">Натисни "Запланувати"</h3>
+        <p class="text-slate-400 leading-relaxed">Система автоматично розподілить задачі по твоєму робочому графіку з урахуванням пріоритетів і дедлайнів.</p>
       </div>
+
+      <div class="relative p-8 rounded-3xl bg-[#1b1a26] border border-white/5 text-center space-y-5">
+        <div class="w-16 h-16 rounded-2xl bg-[#ffb2bc]/20 flex items-center justify-center mx-auto">
+          <span class="material-symbols-outlined text-[#ffb2bc] text-3xl" style="font-variation-settings: 'FILL' 1;">calendar_month</span>
+        </div>
+        <div class="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-[#ffb2bc] text-[#1b1a26] font-black text-sm flex items-center justify-center shadow-lg">3</div>
+        <h3 class="text-xl font-bold text-white">Отримай готовий план</h3>
+        <p class="text-slate-400 leading-relaxed">Переглядай розклад у календарі, отримуй сповіщення про дедлайни і виконуй задачі вчасно.</p>
+      </div>
+    </div>
+  </section>
+  <section id="about" class="max-w-7xl mx-auto px-6 py-24 border-t border-white/5">
+    <div class="max-w-3xl mx-auto text-center space-y-6">
+      <h2 class="text-4xl font-black text-white">Про проєкт</h2>
+      <div class="h-1 w-24 bg-[#c4c0ff] rounded-full mx-auto"></div>
+      <p class="text-lg text-slate-400 leading-relaxed">
+        PlanIQ — дипломний проєкт з розробки системи інтелектуального планування задач. 
+        Веб-застосунок з AI-підтримкою для автоматичного розподілу завдань у робочому графіку користувача.
+      </p>
+      <div class="flex flex-wrap justify-center gap-3 pt-4">
+        <span class="px-4 py-2 rounded-full bg-[#292935] text-[#c4c0ff] text-sm font-mono">FastAPI</span>
+        <span class="px-4 py-2 rounded-full bg-[#292935] text-[#c4c0ff] text-sm font-mono">MongoDB</span>
+        <span class="px-4 py-2 rounded-full bg-[#292935] text-[#c4c0ff] text-sm font-mono">Gemini AI</span>
+        <span class="px-4 py-2 rounded-full bg-[#292935] text-[#c4c0ff] text-sm font-mono">Vanilla JS</span>
+        <span class="px-4 py-2 rounded-full bg-[#292935] text-[#c4c0ff] text-sm font-mono">Tailwind CSS</span>
+      </div>
+      <p class="text-sm text-slate-500 font-mono pt-4">Дипломний проєкт · 2026</p>
     </div>
   </section>
 </main>

@@ -10,341 +10,235 @@ export function renderOnboarding() {
   <div class="relative z-10 w-full max-w-[800px] flex flex-col gap-8">
     <header class="flex justify-between items-center w-full px-6 py-4">
       <span class="text-xl font-bold tracking-widest text-[#6C63FF]">ПланІQ</span>
-      <div class="flex items-center gap-4">
-        <span class="material-symbols-outlined text-slate-400 cursor-pointer">help_outline</span>
-      </div>
     </header>
 
     <div class="px-6 flex flex-col gap-2">
       <div class="flex justify-between items-center mb-1">
-        <span id="onb-step-label" class="text-[10px] font-medium tracking-widest text-[#c4c0ff] uppercase">Крок 1 з 3</span>
+        <span id="onb-step-label" class="text-[10px] font-medium tracking-widest text-[#c4c0ff] uppercase">Крок 1 з 2</span>
         <span class="text-[10px] font-medium text-slate-500 uppercase">Прогрес налаштування</span>
       </div>
       <div class="flex gap-2 h-1.5 w-full">
         <div id="onb-bar-1" class="flex-1 bg-[#8781ff] rounded-full shadow-[0_0_8px_rgba(108,99,255,0.4)]"></div>
         <div id="onb-bar-2" class="flex-1 bg-[#343440] rounded-full"></div>
-        <div id="onb-bar-3" class="flex-1 bg-[#343440] rounded-full"></div>
       </div>
     </div>
 
     <section class="glass-panel rounded-3xl p-8 md:p-12 shadow-2xl relative overflow-hidden">
       <div class="absolute -top-24 -right-24 w-64 h-64 bg-[#c4c0ff]/10 blur-[100px] rounded-full"></div>
       <div class="absolute -bottom-24 -left-24 w-64 h-64 bg-[#4ddada]/5 blur-[100px] rounded-full"></div>
-
       <div class="relative z-10" id="onb-step-content"></div>
-
       <div class="mt-12 pt-8 border-t border-[#464555]/10 flex justify-between items-center">
-        <button id="onb-back" class="text-slate-400 hover:text-white text-sm font-medium transition-colors hidden">
-          ← Назад
-        </button>
-        <button id="onb-skip" class="text-slate-400 hover:text-white text-sm font-medium transition-colors">
-          Пропустити
-        </button>
+        <button id="onb-back" class="text-slate-400 hover:text-white text-sm font-medium transition-colors hidden" style="position:relative;z-index:50">← Назад</button>
+        <button id="onb-skip" class="text-slate-400 hover:text-white text-sm font-medium transition-colors" style="position:relative;z-index:50">Пропустити</button>
         <button id="onb-next" class="bg-[#c4c0ff] hover:bg-[#e3dfff] text-[#1b0091] font-bold px-8 py-3 rounded-full flex items-center gap-2 transition-all active:scale-95 shadow-lg shadow-[#c4c0ff]/10">
-          Далі
-          <span class="material-symbols-outlined text-sm">arrow_forward</span>
+          Далі <span class="material-symbols-outlined text-sm">arrow_forward</span>
         </button>
       </div>
     </section>
 
     <footer class="text-center py-4">
-      <p class="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-medium">Керовано вашим фокусом • ПланІQ 2024</p>
+      <p class="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-medium">ПланІQ • Дипломний проєкт 2026</p>
     </footer>
   </div>
 </main>`;
 }
 
-function renderStep1() {
+function renderStep1(wh, workDays) {
+  const days = [
+    { label: 'Пн', value: 0 },
+    { label: 'Вт', value: 1 },
+    { label: 'Ср', value: 2 },
+    { label: 'Чт', value: 3 },
+    { label: 'Пт', value: 4 },
+    { label: 'Сб', value: 5 },
+    { label: 'Нд', value: 6 },
+  ];
+
   return `
-    <div class="mb-10 text-center md:text-left">
-      <h1 class="text-3xl md:text-4xl font-bold tracking-tight text-white mb-3">Налаштуй свій ритм</h1>
-      <p class="text-[#c7c4d8] text-lg max-w-md">Вкажи, коли ти зазвичай працюєш. Це допоможе AI ПланІQ підібрати ідеальний час для твоїх завдань.</p>
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-white mb-2">Налаштуй свій графік</h1>
+      <p class="text-[#c7c4d8]">Вкажи робочі дні та години — система планує задачі тільки в цей час.</p>
     </div>
-    <div class="flex flex-col gap-6 overflow-x-auto pb-4">
-      <div class="inline-grid grid-cols-[auto_repeat(7,1fr)] gap-2 min-w-[600px]" id="schedule-grid">
-        <div></div>
-        <div class="text-center text-[11px] font-bold text-slate-400 pb-2">ПН</div>
-        <div class="text-center text-[11px] font-bold text-slate-400 pb-2">ВТ</div>
-        <div class="text-center text-[11px] font-bold text-slate-400 pb-2">СР</div>
-        <div class="text-center text-[11px] font-bold text-slate-400 pb-2">ЧТ</div>
-        <div class="text-center text-[11px] font-bold text-slate-400 pb-2">ПТ</div>
-        <div class="text-center text-[11px] font-bold text-[#ffb2bc] pb-2">СБ</div>
-        <div class="text-center text-[11px] font-bold text-[#ffb2bc] pb-2">НД</div>
-      </div>
-    </div>
-    <div class="mt-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-      <div class="flex gap-6">
-        <div class="flex items-center gap-2">
-          <div class="w-4 h-4 rounded bg-[#8781ff] shadow-[0_0_8px_rgba(108,99,255,0.4)]"></div>
-          <span class="text-xs font-medium text-[#c7c4d8]">Робочий час</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <div class="w-4 h-4 rounded bg-[#252540]"></div>
-          <span class="text-xs font-medium text-[#c7c4d8]">Вільний час</span>
+    <div class="space-y-6">
+      <div>
+        <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Робочі дні</p>
+        <div class="grid grid-cols-7 gap-2">
+          ${days.map(day => `
+            <button type="button"
+              class="work-day-btn py-3 rounded-xl text-sm font-black border transition-all ${workDays.includes(day.value)
+                ? 'active bg-[#6C63FF]/30 border-[#c4c0ff]/40 text-white'
+                : 'bg-[#0d0d18] border-white/5 text-slate-500 hover:text-white hover:bg-[#292935]'
+              }" data-day="${day.value}">
+              ${day.label}
+            </button>
+          `).join('')}
         </div>
       </div>
-      <div class="flex items-start gap-3 p-4 rounded-xl bg-[#343440]/40 border-l-2 border-[#4ddada] max-w-xs">
-        <span class="material-symbols-outlined text-[#4ddada] text-sm">psychology</span>
-        <p class="text-[11px] text-[#c7c4d8] leading-relaxed">
-          <span class="text-[#4ddada] font-bold">Порада:</span> Більшість користувачів продуктивніші зранку. Спробуй виділити 09:00-11:00 для глибокої роботи.
-        </p>
+      <div>
+        <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Робочий час</p>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="text-[10px] text-slate-500 uppercase tracking-widest block mb-2">Початок</label>
+            <input type="time" id="onb-work-start" value="${wh.start}"
+              class="w-full bg-[#0d0d18] border border-white/5 rounded-xl px-4 py-3 text-white font-mono outline-none focus:ring-2 focus:ring-[#c4c0ff]/30" />
+          </div>
+          <div>
+            <label class="text-[10px] text-slate-500 uppercase tracking-widest block mb-2">Кінець</label>
+            <input type="time" id="onb-work-end" value="${wh.end}"
+              class="w-full bg-[#0d0d18] border border-white/5 rounded-xl px-4 py-3 text-white font-mono outline-none focus:ring-2 focus:ring-[#c4c0ff]/30" />
+          </div>
+        </div>
       </div>
     </div>`;
 }
 
-function renderStep2() {
+function renderStep2(protectPeak) {
   return `
-    <div class="mb-10 text-center md:text-left">
-      <h1 class="text-3xl md:text-4xl font-bold tracking-tight text-white mb-3">Що ти плануєш?</h1>
-      <p class="text-[#c7c4d8] text-lg max-w-md">Обери категорії, які найчастіше зустрічаються у твоєму житті. Це допоможе AI краще організувати твої задачі.</p>
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-white mb-2">Коли ти на піку?</h1>
+      <p class="text-[#c7c4d8]">Система ставитиме складні задачі саме в цей час.</p>
     </div>
-    <div class="grid grid-cols-2 md:grid-cols-3 gap-4" id="category-grid">
-      <button class="category-btn selected p-5 rounded-2xl bg-[#6C63FF]/20 border border-[#6C63FF]/40 flex flex-col items-center gap-3 transition-all hover:scale-105 active:scale-95" data-cat="university">
-        <span class="text-3xl">🎓</span>
-        <span class="text-sm font-bold text-white">Університет</span>
-      </button>
-      <button class="category-btn p-5 rounded-2xl bg-[#1b1a26] border border-[#464555]/20 flex flex-col items-center gap-3 transition-all hover:scale-105 active:scale-95 hover:border-[#6C63FF]/30" data-cat="work">
-        <span class="text-3xl">💼</span>
-        <span class="text-sm font-bold text-white">Робота</span>
-      </button>
-      <button class="category-btn selected p-5 rounded-2xl bg-[#6C63FF]/20 border border-[#6C63FF]/40 flex flex-col items-center gap-3 transition-all hover:scale-105 active:scale-95" data-cat="personal">
-        <span class="text-3xl">🏠</span>
-        <span class="text-sm font-bold text-white">Особисте</span>
-      </button>
-      <button class="category-btn p-5 rounded-2xl bg-[#1b1a26] border border-[#464555]/20 flex flex-col items-center gap-3 transition-all hover:scale-105 active:scale-95 hover:border-[#6C63FF]/30" data-cat="fitness">
-        <span class="text-3xl">🏋️</span>
-        <span class="text-sm font-bold text-white">Спорт</span>
-      </button>
-      <button class="category-btn p-5 rounded-2xl bg-[#1b1a26] border border-[#464555]/20 flex flex-col items-center gap-3 transition-all hover:scale-105 active:scale-95 hover:border-[#6C63FF]/30" data-cat="hobby">
-        <span class="text-3xl">🎨</span>
-        <span class="text-sm font-bold text-white">Хобі</span>
-      </button>
-      <button class="category-btn p-5 rounded-2xl bg-[#1b1a26] border border-[#464555]/20 flex flex-col items-center gap-3 transition-all hover:scale-105 active:scale-95 hover:border-[#6C63FF]/30" data-cat="health">
-        <span class="text-3xl">❤️</span>
-        <span class="text-sm font-bold text-white">Здоров'я</span>
-      </button>
-    </div>
-    <p class="mt-6 text-xs text-slate-500 text-center">Обери щонайменше 1 категорію. Ти зможеш змінити це пізніше.</p>`;
-}
-
-function renderStep3() {
-  return `
-    <div class="px-0 pb-6">
-      <div class="flex justify-between items-end mb-2">
-        <h1 class="text-3xl font-bold tracking-tight text-white">Коли ти на піку?</h1>
-        <span class="mono text-[#4ddada] text-sm font-medium">3 з 3</span>
+    <div class="space-y-6">
+      <div>
+        <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Пікові години</p>
+        <div class="grid grid-cols-3 gap-3" id="peak-selector">
+          <button class="peak-btn p-4 rounded-xl border transition-all text-center bg-[#0d0d18] border-white/5 hover:border-[#c4c0ff]/40" data-peak="morning">
+            <div class="text-2xl mb-2">🌅</div>
+            <p class="font-bold text-white text-sm">Ранок</p>
+            <p class="text-xs text-slate-400 font-mono mt-1">09:00 — 11:00</p>
+          </button>
+          <button class="peak-btn p-4 rounded-xl border transition-all text-center bg-[#0d0d18] border-white/5 hover:border-[#c4c0ff]/40" data-peak="afternoon">
+            <div class="text-2xl mb-2">☀️</div>
+            <p class="font-bold text-white text-sm">День</p>
+            <p class="text-xs text-slate-400 font-mono mt-1">13:00 — 15:00</p>
+          </button>
+          <button class="peak-btn p-4 rounded-xl border transition-all text-center bg-[#0d0d18] border-white/5 hover:border-[#c4c0ff]/40" data-peak="evening">
+            <div class="text-2xl mb-2">🌙</div>
+            <p class="font-bold text-white text-sm">Вечір</p>
+            <p class="text-xs text-slate-400 font-mono mt-1">18:00 — 20:00</p>
+          </button>
+        </div>
       </div>
-      <p class="text-[#c7c4d8]">Система поставить складні задачі саме в цей час</p>
-    </div>
-    <div class="relative bg-[#0d0d18] rounded-2xl p-6 border border-[#464555]/20 mb-8">
-      <div class="flex justify-between items-center mb-6">
-        <span class="mono text-xs text-slate-500">06:00</span>
-        <div class="h-[1px] flex-1 mx-4 bg-gradient-to-r from-transparent via-[#464555] to-transparent"></div>
-        <span class="mono text-xs text-slate-500">24:00</span>
-      </div>
-      <div class="grid grid-cols-[repeat(18,1fr)] h-32 w-full gap-1 items-end">
-        <div class="bg-[#343440] rounded-t-lg h-1/4 transition-all hover:bg-[#c4c0ff]/20"></div>
-        <div class="bg-[#343440] rounded-t-lg h-1/3 transition-all hover:bg-[#c4c0ff]/20"></div>
-        <div class="energy-mid rounded-t-lg h-1/2 opacity-60"></div>
-        <div class="energy-mid rounded-t-lg h-2/3 opacity-80"></div>
-        <div class="energy-peak rounded-t-lg h-5/6"></div>
-        <div class="energy-peak rounded-t-lg h-full"></div>
-        <div class="energy-peak rounded-t-lg h-5/6"></div>
-        <div class="energy-mid rounded-t-lg h-3/4"></div>
-        <div class="energy-mid rounded-t-lg h-2/3"></div>
-        <div class="bg-[#343440] rounded-t-lg h-1/2"></div>
-        <div class="bg-[#343440] rounded-t-lg h-1/3"></div>
-        <div class="energy-low rounded-t-lg h-1/4 opacity-40"></div>
-        <div class="energy-low rounded-t-lg h-1/5 opacity-40"></div>
-        <div class="energy-mid rounded-t-lg h-1/3"></div>
-        <div class="energy-peak rounded-t-lg h-2/3"></div>
-        <div class="energy-peak rounded-t-lg h-3/4"></div>
-        <div class="energy-mid rounded-t-lg h-1/2"></div>
-        <div class="bg-[#343440] rounded-t-lg h-1/4"></div>
-      </div>
-      <div class="flex justify-between mt-4 px-1">
-        <span class="mono text-[10px] text-slate-600">Ранок</span>
-        <span class="mono text-[10px] text-slate-600">День</span>
-        <span class="mono text-[10px] text-slate-600">Вечір</span>
-        <span class="mono text-[10px] text-slate-600">Ніч</span>
-      </div>
-    </div>
-    <div class="grid grid-cols-3 gap-4 mb-8">
-      <button class="flex items-center justify-center gap-3 p-4 rounded-2xl bg-[#1b1a26] border border-[#464555]/30 hover:bg-[#292935] transition-all active:scale-95">
-        <div class="w-4 h-4 rounded-full bg-[#7f1d1d]"></div>
-        <span class="font-medium text-sm">Низька</span>
-      </button>
-      <button class="flex items-center justify-center gap-3 p-4 rounded-2xl bg-[#1b1a26] border border-[#464555]/30 hover:bg-[#292935] transition-all active:scale-95">
-        <div class="w-4 h-4 rounded-full bg-[#d97706]"></div>
-        <span class="font-medium text-sm">Середня</span>
-      </button>
-      <button class="flex items-center justify-center gap-3 p-4 rounded-2xl bg-[#c4c0ff]/10 border border-[#c4c0ff]/30 hover:bg-[#c4c0ff]/20 transition-all active:scale-95">
-        <div class="w-4 h-4 rounded-full energy-peak"></div>
-        <span class="font-bold text-sm text-[#c4c0ff]">Висока/Пік</span>
-      </button>
-    </div>
-    <div class="bg-[#343440]/40 border-l-2 border-[#4ddada] p-5 rounded-r-xl relative overflow-hidden group">
-      <div class="absolute top-0 right-0 p-2 opacity-20 group-hover:opacity-100 transition-opacity">
-        <span class="material-symbols-outlined text-[#4ddada] animate-pulse">insights</span>
-      </div>
-      <div class="flex gap-4">
-        <span class="text-xl">💡</span>
+      <div class="flex items-center justify-between p-4 bg-[#1b1a26] rounded-xl border border-white/5">
         <div>
-          <p class="text-sm font-medium text-white mb-1">Порада:</p>
-          <p class="text-sm text-[#c7c4d8] leading-relaxed opacity-90">Більшість людей мають пік між <span class="text-[#4ddada] mono">09:00</span> і <span class="text-[#4ddada] mono">12:00</span>. Спробуй позначити цей період як свій "Пік" для максимальної продуктивності.</p>
+          <p class="font-bold text-white text-sm">Захищати пікові години</p>
+          <p class="text-xs text-slate-400 mt-0.5">Складні задачі (7+) ставитимуться тільки в пікові години</p>
         </div>
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input type="checkbox" id="onb-protect-peak" class="sr-only peer" ${protectPeak ? 'checked' : ''}/>
+          <div class="w-11 h-6 bg-[#343440] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#c4c0ff]"></div>
+        </label>
       </div>
     </div>`;
-}
-
-function buildScheduleGrid() {
-  const grid = document.getElementById('schedule-grid');
-  if (!grid) return;
-  for (let h = 6; h <= 24; h++) {
-    const timeStr = h < 10 ? `0${h}:00` : `${h}:00`;
-    const timeDiv = document.createElement('div');
-    timeDiv.className = 'text-[10px] font-mono text-slate-500 flex items-center pr-4 h-[28px]';
-    timeDiv.textContent = timeStr;
-    grid.appendChild(timeDiv);
-    for (let d = 0; d < 7; d++) {
-      const cell = document.createElement('div');
-      cell.dataset.hour = String(h);
-      cell.dataset.day = String(d);
-      const isActive = (h >= 9 && h <= 18 && d < 5);
-      cell.className = `grid-cell rounded-md cursor-pointer ${isActive ? 'active bg-[#8781ff]/80 border border-[#c4c0ff]/20' : 'bg-[#252540] hover:bg-[#2f2f50]'}`;
-      cell.addEventListener('click', () => {
-        cell.classList.toggle('active');
-        cell.classList.toggle('bg-[#8781ff]/80');
-        cell.classList.toggle('border');
-        cell.classList.toggle('border-[#c4c0ff]/20');
-        cell.classList.toggle('bg-[#252540]');
-      });
-      grid.appendChild(cell);
-    }
-  }
 }
 
 export function initOnboarding() {
   let currentStep = 1;
+  let savedWorkHours = { start: '09:00', end: '18:00' };
+  let savedWorkDays = [0, 1, 2, 3, 4];
+
   const stepContent = document.getElementById('onb-step-content');
   const stepLabel   = document.getElementById('onb-step-label');
-  const bar1 = document.getElementById('onb-bar-1');
-  const bar2 = document.getElementById('onb-bar-2');
-  const bar3 = document.getElementById('onb-bar-3');
-  const backBtn = document.getElementById('onb-back');
-  const skipBtn = document.getElementById('onb-skip');
-  const nextBtn = document.getElementById('onb-next');
- 
+  const bar1        = document.getElementById('onb-bar-1');
+  const bar2        = document.getElementById('onb-bar-2');
+  const backBtn     = document.getElementById('onb-back');
+  const skipBtn     = document.getElementById('onb-skip');
+  const nextBtn     = document.getElementById('onb-next');
+
+  const activeBar   = 'flex-1 bg-[#8781ff] rounded-full shadow-[0_0_8px_rgba(108,99,255,0.4)]';
+  const inactiveBar = 'flex-1 bg-[#343440] rounded-full';
+
   function showStep(step) {
     currentStep = step;
-    stepLabel.textContent = `Крок ${step} з 3`;
- 
-    const activeClass   = 'bg-[#8781ff] rounded-full shadow-[0_0_8px_rgba(108,99,255,0.4)]';
-    const inactiveClass = 'bg-[#343440] rounded-full';
- 
-    [bar1, bar2, bar3].forEach((bar, i) => {
-      bar.className = `flex-1 ${i < step ? activeClass : inactiveClass}`;
-    });
- 
+    stepLabel.textContent = `Крок ${step} з 2`;
+    bar1.className = step >= 1 ? activeBar : inactiveBar;
+    bar2.className = step >= 2 ? activeBar : inactiveBar;
+
     backBtn.classList.toggle('hidden', step === 1);
- 
-    if (step === 3) {
+
+    if (step === 2) {
       nextBtn.innerHTML = 'Завершити налаштування <span class="material-symbols-outlined text-sm">check_circle</span>';
-      nextBtn.className = 'bg-[#4CAF82] hover:bg-[#45a076] text-white px-8 py-3.5 rounded-full font-bold flex items-center gap-2 shadow-lg shadow-[#4CAF82]/20 transition-all hover:translate-y-[-2px] active:scale-95';
+      nextBtn.className = 'bg-[#4CAF82] hover:bg-[#45a076] text-white px-8 py-3.5 rounded-full font-bold flex items-center gap-2 shadow-lg transition-all active:scale-95';
     } else {
       nextBtn.innerHTML = 'Далі <span class="material-symbols-outlined text-sm">arrow_forward</span>';
       nextBtn.className = 'bg-[#c4c0ff] hover:bg-[#e3dfff] text-[#1b0091] font-bold px-8 py-3 rounded-full flex items-center gap-2 transition-all active:scale-95 shadow-lg shadow-[#c4c0ff]/10';
     }
- 
+
+    const prefs = preferencesStore.get();
+
     if (step === 1) {
-      stepContent.innerHTML = renderStep1();
-      buildScheduleGrid();
-    } else if (step === 2) {
-      stepContent.innerHTML = renderStep2();
-      initCategoryGrid();
+      const wh = prefs?.work_hours || { start: '09:00', end: '18:00' };
+      const workDays = prefs?.work_days?.length ? prefs.work_days : [0, 1, 2, 3, 4];
+      stepContent.innerHTML = renderStep1(wh, workDays);
+      document.querySelectorAll('.work-day-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const active = btn.classList.contains('active');
+          if (active) {
+            btn.classList.remove('active', 'bg-[#6C63FF]/30', 'border-[#c4c0ff]/40', 'text-white');
+            btn.classList.add('bg-[#0d0d18]', 'border-white/5', 'text-slate-500');
+          } else {
+            btn.classList.add('active', 'bg-[#6C63FF]/30', 'border-[#c4c0ff]/40', 'text-white');
+            btn.classList.remove('bg-[#0d0d18]', 'border-white/5', 'text-slate-500');
+          }
+        });
+      });
     } else {
-      stepContent.innerHTML = renderStep3();
+      const protectPeak = prefs?.protect_peak_hours ?? false;
+      stepContent.innerHTML = renderStep2(protectPeak);
+      document.querySelectorAll('.peak-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.peak-btn').forEach(b => {
+            b.classList.remove('active', 'bg-[#6C63FF]/20', 'border-[#c4c0ff]/40');
+            b.classList.add('bg-[#0d0d18]', 'border-white/5');
+          });
+          btn.classList.add('active', 'bg-[#6C63FF]/20', 'border-[#c4c0ff]/40');
+          btn.classList.remove('bg-[#0d0d18]', 'border-white/5');
+        });
+      });
+      const morning = document.querySelector('.peak-btn[data-peak="morning"]');
+      if (morning) morning.click();
     }
   }
- 
-  function initCategoryGrid() {
-    document.querySelectorAll('.category-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        btn.classList.toggle('selected');
-        btn.classList.toggle('bg-[#6C63FF]/20');
-        btn.classList.toggle('border-[#6C63FF]/40');
-        btn.classList.toggle('bg-[#1b1a26]');
-        btn.classList.toggle('border-[#464555]/20');
-      });
-    });
-  }
- 
-  // ── Збір даних зі сторінок ─────────────────────────────────────
- 
-  function collectWorkHours() {
-    const activeCells = document.querySelectorAll('.grid-cell.active');
-    if (!activeCells.length) return { start: '09:00', end: '18:00' };
 
-    const hours = [...activeCells]
-      .map(c => parseInt(c.dataset.hour))
-      .filter(h => !Number.isNaN(h));
+  backBtn.addEventListener('click', () => {
+    if (currentStep > 1) showStep(currentStep - 1);
+  });
 
-    if (!hours.length) return { start: '09:00', end: '18:00' };
+  skipBtn.addEventListener('click', () => {
+    window.location.hash = '#/dashboard';
+  });
 
-    const minH = Math.min(...hours);
-    const maxH = Math.max(...hours);
-
-    return {
-      start: `${String(minH).padStart(2, '0')}:00`,
-      end: `${String(Math.min(maxH + 1, 24)).padStart(2, '0')}:00`,
-    };
-  }
- 
-  function collectWorkDays() {
-    // Активні клітинки містять data-day (0=Пн...6=Нд) якщо є,
-    // або рахуємо за колонками. Дефолт — [0,1,2,3,4]
-    const activeCells = document.querySelectorAll('.grid-cell.active');
-    if (!activeCells.length) return [0,1,2,3,4];
- 
-    const days = new Set();
-    activeCells.forEach(c => {
-      if (c.dataset.day !== undefined) {
-        days.add(parseInt(c.dataset.day));
-      }
-    });
-    return days.size > 0 ? [...days].sort() : [0,1,2,3,4];
-  }
- 
-  function collectCategories() {
-    const selected = [...document.querySelectorAll('.category-btn.selected')]
-      .map(b => (b.dataset.cat || '').toUpperCase())
-      .filter(Boolean);
-    return selected.length > 0 ? selected : ['PERSONAL'];
-  }
- 
-  // ── Кнопки ────────────────────────────────────────────────────
- 
   nextBtn.addEventListener('click', async () => {
-    if (currentStep < 3) {
-      showStep(currentStep + 1);
+    if (currentStep < 2) {
+      savedWorkHours = {
+        start: document.getElementById('onb-work-start')?.value || '09:00',
+        end:   document.getElementById('onb-work-end')?.value   || '18:00',
+      };
+      savedWorkDays = [...document.querySelectorAll('.work-day-btn.active')]
+        .map(b => parseInt(b.dataset.day))
+        .filter(d => !isNaN(d))
+        .sort((a, b) => a - b);
+      showStep(2);
       return;
     }
- 
-    // Крок 3 — збираємо все і зберігаємо
+
     nextBtn.disabled = true;
     nextBtn.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">progress_activity</span> Зберігаємо...';
- 
+
+    const selected = document.querySelector('.peak-btn.active');
+    const peakMap = {
+      morning:   ['09:00', '10:00', '11:00'],
+      afternoon: ['13:00', '14:00', '15:00'],
+      evening:   ['18:00', '19:00', '20:00'],
+    };
+
     try {
-      const payload = {
-        work_hours:          collectWorkHours(),
-        work_days:           collectWorkDays(),
-        selected_categories: collectCategories(),
-        // Пікові години — беремо дефолт, юзер зможе змінити в Settings
-        peak_hours: ['09:00', '10:00', '11:00'],
-      };
- 
-      await preferencesStore.put(payload);
- 
+      await preferencesStore.put({
+        work_hours:         savedWorkHours,
+        work_days:          savedWorkDays,
+        peak_hours:         peakMap[selected?.dataset?.peak] || ['09:00', '10:00', '11:00'],
+        protect_peak_hours: document.getElementById('onb-protect-peak')?.checked ?? false,
+      });
       toast('Налаштування збережено! Ласкаво просимо! 🎉', 'success');
       setTimeout(() => { window.location.hash = '#/dashboard'; }, 400);
     } catch (err) {
@@ -355,14 +249,6 @@ export function initOnboarding() {
       nextBtn.disabled = false;
     }
   });
- 
-  backBtn.addEventListener('click', () => {
-    if (currentStep > 1) showStep(currentStep - 1);
-  });
- 
-  skipBtn.addEventListener('click', () => {
-    window.location.hash = '#/dashboard';
-  });
- 
-  showStep(1);
+
+  preferencesStore.load().finally(() => showStep(1));
 }

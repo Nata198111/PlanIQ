@@ -66,19 +66,19 @@ function sameDay(a, b) {
 }
 
 export function renderCalendarView(options = {}) {
-  const { expanded = false, anchorDate = new Date(), viewMode = 'week' } = options;
+  const { expanded = false, anchorDate = new Date(), viewMode = 'week', blockedSlots = [] } = options;
 
   const gridMinHeight = expanded ? 'min-h-[1200px]' : 'min-h-[840px]';
   const hourHeight = expanded ? 80 : 60;
 
   if (viewMode === 'week') {
-    return renderWeekGrid(anchorDate, hourHeight, gridMinHeight);
+    return renderWeekGrid(anchorDate, hourHeight, gridMinHeight, blockedSlots);
   }
 
   return renderMonthGrid(anchorDate, expanded);
 }
 
-function renderWeekGrid(anchor, hHeight, minH) {
+function renderWeekGrid(anchor, hHeight, minH, blockedSlots = []) {
   const startOfWeek = new Date(anchor);
   const day = startOfWeek.getDay();
   const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1);
@@ -129,6 +129,24 @@ function renderWeekGrid(anchor, hHeight, minH) {
     });
 
     let blocksHtml = '';
+
+    const weekdayIndex = i; // 0=Пн...6=Нд
+    blockedSlots
+      .filter(slot => slot.day_of_week === weekdayIndex)
+      .forEach(slot => {
+        const [sh, sm] = slot.start_time.split(':').map(Number);
+        const [eh, em] = slot.end_time.split(':').map(Number);
+        const startHour = sh + sm / 60;
+        const endHour = eh + em / 60;
+        const top = Math.max(0, (startHour - 8) * hHeight);
+        const height = Math.max(20, (endHour - startHour) * hHeight);
+
+        blocksHtml += `
+          <div class="absolute left-0 right-0 z-10 overflow-hidden pointer-events-none"
+              style="top:${top}px;height:${height}px;background:${slot.color || '#464555'}40;border-left:3px solid ${slot.color || '#464555'};">
+            <p class="text-[9px] font-bold text-slate-400 px-2 pt-1 truncate">${slot.title}</p>
+          </div>`;
+      });
 
     dayTasks.forEach(task => {
       const startStr = getTaskDisplayTime(task);

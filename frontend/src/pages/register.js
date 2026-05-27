@@ -1,28 +1,29 @@
+import { renderFooter } from '../components/footer.js';
 import { registerAPI } from '../services/auth.js';
 import { toast } from '../services/toast.js';
 import { preferencesStore } from '../services/preferences-store.js';
 
 export function renderRegister() {
   return `
-<main class="flex-grow flex items-center justify-center p-6 relative overflow-hidden min-h-screen">
+<main class="flex items-center justify-center p-6 relative overflow-hidden min-h-screen">
   <div class="fixed inset-0 overflow-hidden pointer-events-none">
     <div class="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-[#c4c0ff]/10 blur-[120px] rounded-full"></div>
     <div class="absolute top-[60%] -right-[5%] w-[30%] h-[30%] bg-[#4ddada]/10 blur-[100px] rounded-full"></div>
   </div>
   <div class="relative z-10 w-full max-w-[440px]">
-    <div class="text-center mb-10">
+    <div class="text-center mb-6">
       <a href="#/landing" class="inline-flex items-center justify-center mb-4">
         <span class="text-4xl font-extrabold tracking-tighter text-white">ПланІQ</span>
         <div class="ml-2 w-2 h-2 bg-[#4ddada] rounded-full animate-pulse"></div>
       </a>
-      <p class="font-mono text-[10px] uppercase tracking-[0.3em] text-[#918fa1]">Когнітивне Святилище</p>
+      <p class="font-mono text-[10px] uppercase tracking-[0.3em] text-[#918fa1]">AI-планувальник задач</p>
     </div>
-    <section class="glass-effect rounded-lg p-8 md:p-10 border border-white/5 relative overflow-hidden">
-      <div class="mb-8">
-        <h1 class="text-2xl font-bold tracking-tight text-white mb-2">Створити акаунт</h1>
-        <p class="text-[#c7c4d8] text-sm">Розпочніть свій шлях до продуктивного потоку.</p>
+    <section class="glass-effect rounded-lg p-6 md:p-8 border border-white/5 relative overflow-hidden">
+      <div class="mb-1">
+        <h1 class="text-2xl font-bold tracking-tight text-white mb-1">Створити акаунт</h1>
+        <p class="text-[#c7c4d8] text-sm">Один акаунт — і всі твої задачі під контролем.</p>
       </div>
-      <form id="register-form" class="space-y-5">
+      <form id="register-form" class="space-y-3">
         <div class="space-y-2">
           <label class="font-mono text-[11px] uppercase tracking-widest text-[#918fa1] ml-1">Ім'я</label>
           <div class="relative group input-focus-glow transition-all duration-300 rounded-md bg-[#1b1a26]">
@@ -57,28 +58,20 @@ export function renderRegister() {
           <p id="reg-confirm-error" class="text-[#FF6584] text-[11px] ml-1 font-medium hidden">Паролі не збігаються</p>
         </div>
         <div id="register-error" class="hidden text-[#ffb4ab] text-sm text-center p-3 bg-[#93000a]/20 rounded-lg"></div>
-        <div class="pt-4">
+        <div class="pt-2">
           <button class="w-full py-4 bg-[#6C63FF] text-white font-bold rounded-xl primary-glow hover:brightness-110 active:scale-[0.98] transition-all duration-200" type="submit">
             Зареєструватися
           </button>
         </div>
       </form>
-      <div class="flex items-center gap-4 my-8">
-        <div class="h-[1px] flex-1 bg-white/5"></div>
-        <span class="font-mono text-[10px] uppercase text-[#918fa1]">або</span>
-        <div class="h-[1px] flex-1 bg-white/5"></div>
-      </div>
-      <div class="text-center">
-        <a class="inline-block text-sm text-[#c7c4d8] hover:text-[#4ddada] transition-colors duration-200 group" href="#/login">
-          Вже маєте акаунт? <span class="text-[#4ddada] font-semibold group-hover:underline underline-offset-4">Увійти</span>
-        </a>
-      </div>
     </section>
-    <footer class="mt-8 text-center">
-      <p class="font-mono text-[9px] text-[#918fa1]/40 uppercase tracking-[0.2em]">© 2024 ПланІQ. Креативна Ефективність.</p>
-    </footer>
+    <p class="text-center mt-3 text-[#c7c4d8] text-sm">
+      Вже маєте акаунт?
+      <a class="text-[#4ddada] font-bold hover:underline ml-1" href="#/login">Увійти</a>
+    </p>
   </div>
-</main>`;
+</main>
+${renderFooter()}`;
 }
 
 export function initRegister() {

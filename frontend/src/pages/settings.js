@@ -211,7 +211,6 @@ function hoursTab() {
   const blockedSlotsHTML = blockedSlots.length
     ? blockedSlots.map(slot => {
         const dayLabel = days.find(d => d.value === slot.day_of_week)?.label || '—';
-
         return `
           <div class="flex items-center justify-between gap-3 p-3 rounded-xl bg-[#0d0d18] border border-white/5">
             <div class="min-w-0">
@@ -225,7 +224,7 @@ function hoursTab() {
       }).join('')
     : `<div class="p-4 rounded-xl bg-[#0d0d18] text-sm text-slate-500 text-center">
         Заблокованих слотів ще немає
-      </div>`;  
+      </div>`;
 
   const isActiveDay = day => workDays.includes(day);
 
@@ -251,13 +250,15 @@ function hoursTab() {
   return `
 <div class="mb-8">
   <h2 class="text-3xl font-black text-white tracking-tight mb-2">Робочі години</h2>
-  <p class="text-[#c7c4d8] max-w-2xl">
-    Налаштуй дні та час, коли система може планувати задачі.
-  </p>
+  <p class="text-[#c7c4d8] max-w-2xl">Налаштуй дні та час, коли система може планувати задачі.</p>
 </div>
 
 <div class="grid grid-cols-1 xl:grid-cols-12 gap-8 mb-8">
+
+  <!-- ЛІВА КОЛОНКА -->
   <section class="xl:col-span-8 space-y-6">
+
+    <!-- Робочі дні + Робочий час -->
     <div class="bg-[#1b1a26] rounded-3xl p-8 border border-white/5">
       <div class="flex justify-between items-start gap-4 mb-8">
         <div>
@@ -269,131 +270,125 @@ function hoursTab() {
         </button>
       </div>
 
-      <div class="grid grid-cols-7 gap-3 mb-8">
+      <div class="grid grid-cols-7 gap-3 mb-10">
         ${days.map(day => `
-          <button
-            type="button"
+          <button type="button"
             class="work-day-btn py-4 rounded-2xl text-sm font-black border transition-all ${isActiveDay(day.value)
-      ? 'active bg-[#6C63FF]/30 border-[#c4c0ff]/40 text-white shadow-lg shadow-[#6C63FF]/10'
-      : 'bg-[#0d0d18] border-white/5 text-slate-500 hover:text-white hover:bg-[#292935]'
-    }"
-            data-day="${day.value}">
+              ? 'active bg-[#6C63FF]/30 border-[#c4c0ff]/40 text-white shadow-lg shadow-[#6C63FF]/10'
+              : 'bg-[#0d0d18] border-white/5 text-slate-500 hover:text-white hover:bg-[#292935]'
+            }" data-day="${day.value}">
             ${day.label}
           </button>
         `).join('')}
       </div>
 
-      <h2 class="text-xl font-bold text-white mb-2">Робочий час</h2>
-      <p class="text-sm text-slate-500 mb-6">Цей часовий проміжок застосовується до вибраних робочих днів.</p>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-        <div>
-          <label class="text-[10px] font-bold text-slate-500 uppercase block mb-2 tracking-widest">Початок</label>
-          <input
-            type="time"
-            id="work-start"
-            value="${wh.start}"
-            class="w-full bg-[#0d0d18] border border-white/5 rounded-2xl px-5 py-4 text-white font-mono outline-none focus:ring-2 focus:ring-[#c4c0ff]/30" />
-        </div>
-
-        <div>
-          <label class="text-[10px] font-bold text-slate-500 uppercase block mb-2 tracking-widest">Кінець</label>
-          <input
-            type="time"
-            id="work-end"
-            value="${wh.end}"
-            class="w-full bg-[#0d0d18] border border-white/5 rounded-2xl px-5 py-4 text-white font-mono outline-none focus:ring-2 focus:ring-[#c4c0ff]/30" />
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <aside class="xl:col-span-4 space-y-8">
-    <div class="space-y-4">
-      <h3 class="text-lg font-bold text-white px-1">Швидкі пресети</h3>
-
-      <div class="space-y-3" id="preset-list">
-        <div class="${presetClass('morning')} preset-card p-5 rounded-2xl border transition-all cursor-pointer" data-preset="morning">
-          <div class="flex items-center gap-4">
-            <div class="w-12 h-12 bg-[#00b3b3]/20 rounded-xl flex items-center justify-center text-[#00b3b3]">
-              <span class="material-symbols-outlined">wb_sunny</span>
-            </div>
-            <div>
-              <h4 class="font-bold text-white">Ранкова людина</h4>
-              <p class="text-xs text-slate-400 font-mono uppercase">06:00 — 15:00</p>
-            </div>
-            ${presetCheck('morning')}
+      <div class="border-t border-white/5 pt-8">
+        <h2 class="text-xl font-bold text-white mb-2">Робочий час</h2>
+        <p class="text-sm text-slate-500 mb-6">Цей часовий проміжок застосовується до вибраних робочих днів.</p>
+        <div class="grid grid-cols-2 gap-5">
+          <div>
+            <label class="text-[10px] font-bold text-slate-500 uppercase block mb-2 tracking-widest">Початок</label>
+            <input type="time" id="work-start" value="${wh.start}"
+              class="w-full bg-[#0d0d18] border border-white/5 rounded-2xl px-5 py-4 text-white font-mono outline-none focus:ring-2 focus:ring-[#c4c0ff]/30" />
           </div>
-        </div>
-
-        <div class="${presetClass('standard')} preset-card p-5 rounded-2xl border transition-all cursor-pointer" data-preset="standard">
-          <div class="flex items-center gap-4">
-            <div class="w-12 h-12 bg-[#8781ff]/20 rounded-xl flex items-center justify-center text-[#c4c0ff]">
-              <span class="material-symbols-outlined">work</span>
-            </div>
-            <div>
-              <h4 class="font-bold text-white">Стандартний офіс</h4>
-              <p class="text-xs text-slate-400 font-mono uppercase">09:00 — 18:00</p>
-            </div>
-            ${presetCheck('standard')}
-          </div>
-        </div>
-
-        <div class="${presetClass('night')} preset-card p-5 rounded-2xl border transition-all cursor-pointer" data-preset="night">
-          <div class="flex items-center gap-4">
-            <div class="w-12 h-12 bg-[#f35c7b]/20 rounded-xl flex items-center justify-center text-[#ffb2bc]">
-              <span class="material-symbols-outlined">dark_mode</span>
-            </div>
-            <div>
-              <h4 class="font-bold text-white">Нічна сова</h4>
-              <p class="text-xs text-slate-400 font-mono uppercase">16:00 — 23:00</p>
-            </div>
-            ${presetCheck('night')}
+          <div>
+            <label class="text-[10px] font-bold text-slate-500 uppercase block mb-2 tracking-widest">Кінець</label>
+            <input type="time" id="work-end" value="${wh.end}"
+              class="w-full bg-[#0d0d18] border border-white/5 rounded-2xl px-5 py-4 text-white font-mono outline-none focus:ring-2 focus:ring-[#c4c0ff]/30" />
           </div>
         </div>
       </div>
     </div>
 
-    <div class="bg-[#1b1a26] rounded-3xl p-6 border border-white/5 overflow-hidden">
+    <!-- Обідня перерва -->
+    <div class="bg-[#1b1a26] rounded-3xl p-8 border border-white/5">
       <div class="flex items-center justify-between mb-6">
         <div class="flex items-center gap-3">
           <span class="material-symbols-outlined text-[#4ddada]">restaurant</span>
-          <h3 class="font-bold text-white">Обідня перерва</h3>
+          <div>
+            <h3 class="font-bold text-white">Обідня перерва</h3>
+            <p class="text-xs text-slate-500 mt-0.5">Система не буде планувати задачі в цей проміжок</p>
+          </div>
         </div>
-
         <label class="relative inline-flex items-center cursor-pointer">
           <input ${lb.enabled ? 'checked' : ''} class="sr-only peer" type="checkbox" id="lunch-toggle"/>
           <div class="w-11 h-6 bg-[#343440] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#4ddada]"></div>
         </label>
       </div>
-
-      <div class="flex items-end gap-2 transition-opacity ${lb.enabled ? '' : 'opacity-50 pointer-events-none grayscale'}" id="lunch-block">
+      <div class="flex items-end gap-4 transition-opacity ${lb.enabled ? '' : 'opacity-50 pointer-events-none grayscale'}" id="lunch-block">
         <div class="flex-1">
           <label class="text-[10px] text-slate-500 font-mono uppercase mb-2 block">З</label>
-          <input
-            type="time"
-            id="lunch-start"
-            value="${lb.start}"
-            class="w-full bg-[#343440] rounded-xl px-2 py-3 text-white font-mono outline-none border border-white/5 focus:ring-2 focus:ring-[#4ddada]/20" />
+          <input type="time" id="lunch-start" value="${lb.start}"
+            class="w-full bg-[#0d0d18] border border-white/5 rounded-2xl px-5 py-4 text-white font-mono outline-none focus:ring-2 focus:ring-[#4ddada]/20" />
         </div>
-
-        <div class="pb-3 text-slate-600 flex-shrink-0">—</div>
-
+        <div class="pb-3 text-slate-600 flex-shrink-0 text-xl">—</div>
         <div class="flex-1">
           <label class="text-[10px] text-slate-500 font-mono uppercase mb-2 block">До</label>
-          <input
-            type="time"
-            id="lunch-end"
-            value="${lb.end}"
-            class="w-full bg-[#343440] rounded-xl px-2 py-3 text-white font-mono outline-none border border-white/5 focus:ring-2 focus:ring-[#4ddada]/20" />
+          <input type="time" id="lunch-end" value="${lb.end}"
+            class="w-full bg-[#0d0d18] border border-white/5 rounded-2xl px-5 py-4 text-white font-mono outline-none focus:ring-2 focus:ring-[#4ddada]/20" />
         </div>
       </div>
-
-      <p class="mt-4 text-xs text-slate-400 leading-relaxed italic">
-        *Система не буде планувати задачі в цей проміжок.
-      </p>
     </div>
-    <div class="bg-[#1b1a26] rounded-3xl p-6 border border-white/5 overflow-hidden">
+    ${renderAIInsight({
+      title: 'AI Аналітика',
+      message: 'Ці налаштування будуть використані для майбутнього інтелектуального планування задач.',
+      icon: 'psychology'
+    })}
+
+  </section>
+
+  <!-- ПРАВА КОЛОНКА -->
+  <aside class="xl:col-span-4 space-y-6">
+
+    <!-- Швидкі пресети -->
+    <div class="bg-[#1b1a26] rounded-3xl p-6 border border-white/5">
+      <h3 class="text-base font-bold text-white mb-4">Швидкі пресети</h3>
+      <div class="space-y-3" id="preset-list">
+
+        <div class="${presetClass('morning')} preset-card p-4 rounded-2xl border transition-all cursor-pointer" data-preset="morning">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-[#00b3b3]/20 rounded-xl flex items-center justify-center text-[#00b3b3] flex-shrink-0">
+              <span class="material-symbols-outlined text-sm">wb_sunny</span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h4 class="font-bold text-white text-sm">Ранкова людина</h4>
+              <p class="text-xs text-slate-400 font-mono">06:00 — 15:00</p>
+            </div>
+            ${presetCheck('morning')}
+          </div>
+        </div>
+
+        <div class="${presetClass('standard')} preset-card p-4 rounded-2xl border transition-all cursor-pointer" data-preset="standard">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-[#8781ff]/20 rounded-xl flex items-center justify-center text-[#c4c0ff] flex-shrink-0">
+              <span class="material-symbols-outlined text-sm">work</span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h4 class="font-bold text-white text-sm">Стандартний</h4>
+              <p class="text-xs text-slate-400 font-mono">09:00 — 18:00</p>
+            </div>
+            ${presetCheck('standard')}
+          </div>
+        </div>
+
+        <div class="${presetClass('night')} preset-card p-4 rounded-2xl border transition-all cursor-pointer" data-preset="night">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-[#f35c7b]/20 rounded-xl flex items-center justify-center text-[#ffb2bc] flex-shrink-0">
+              <span class="material-symbols-outlined text-sm">dark_mode</span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h4 class="font-bold text-white text-sm">Нічна сова</h4>
+              <p class="text-xs text-slate-400 font-mono">16:00 — 23:00</p>
+            </div>
+            ${presetCheck('night')}
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Заблоковані слоти -->
+    <div class="bg-[#1b1a26] rounded-3xl p-6 border border-white/5">
       <div class="flex items-center gap-3 mb-6">
         <span class="material-symbols-outlined text-[#c4c0ff]">block</span>
         <div>
@@ -403,50 +398,39 @@ function hoursTab() {
       </div>
 
       <div class="space-y-3 mb-5">
-        <input
-          id="blocked-title"
+        <input id="blocked-title"
           class="w-full bg-[#0d0d18] border border-white/5 rounded-xl px-4 py-3 text-sm text-white outline-none focus:ring-2 focus:ring-[#c4c0ff]/20"
-          placeholder="Назва, наприклад Англійська" />
-        <select
-          id="blocked-day"
+          placeholder="Назва" />
+        <select id="blocked-day"
           class="w-full bg-[#0d0d18] border border-white/5 rounded-xl px-4 py-3 text-sm text-white outline-none focus:ring-2 focus:ring-[#c4c0ff]/20">
           ${days.map(day => `<option value="${day.value}">${day.label}</option>`).join('')}
         </select>
         <div class="grid grid-cols-2 gap-3">
-          <input
-            id="blocked-start"
-            type="time"
-            value="09:00"
+          <input id="blocked-start" type="time" value="09:00"
             class="w-full bg-[#0d0d18] border border-white/5 rounded-xl px-4 py-3 text-sm text-white outline-none focus:ring-2 focus:ring-[#c4c0ff]/20" />
-          <input
-            id="blocked-end"
-            type="time"
-            value="10:00"
+          <input id="blocked-end" type="time" value="10:00"
             class="w-full bg-[#0d0d18] border border-white/5 rounded-xl px-4 py-3 text-sm text-white outline-none focus:ring-2 focus:ring-[#c4c0ff]/20" />
         </div>
-        <button
-          id="add-blocked-slot"
-          class="w-full bg-[#292935] hover:bg-[#343440] text-[#c4c0ff] font-bold py-3 rounded-xl transition-all active:scale-95 flex items-center justify-center gap-2">
+        <button id="add-blocked-slot"
+          class="w-full bg-[#292935] hover:bg-[#343440] text-[#c4c0ff] font-medium py-2 rounded-xl transition-all active:scale-95 flex items-center justify-center gap-2 text-sm">
           <span class="material-symbols-outlined text-sm">add</span>
           Додати заблокований слот
         </button>
       </div>
-      <div id="blocked-slots-list" class="space-y-3">
+
+      <div id="blocked-slots-list" class="space-y-3 max-h-[148px] overflow-y-auto custom-scrollbar pr-1">
         ${blockedSlotsHTML}
       </div>
     </div>
+
+    <!-- Кнопка зберегти -->
     <button class="w-full bg-[#c4c0ff] hover:bg-[#8781ff] text-[#2000a4] font-bold py-4 rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-2xl glow-primary" id="save-hours">
       <span class="material-symbols-outlined">save</span>
       Зберегти налаштування
     </button>
+
   </aside>
 </div>
-
-${renderAIInsight({
-      title: 'AI Аналітика',
-      message: 'Ці налаштування будуть використані для майбутнього інтелектуального планування задач.',
-      icon: 'psychology'
-    })}
 `;
 }
 

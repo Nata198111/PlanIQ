@@ -3,6 +3,7 @@ import { renderTaskAIActions, initTaskAIActions } from '../components/task-ai-ac
 import { toast } from '../services/toast.js';
 import { renderTaskForm, initTaskForm } from '../components/task-form.js';
 import { renderCalendarView, initCalendarView } from '../components/calendar-view.js';
+import { blockedSlotsStore } from '../services/blocked-slots-store.js';
 
 const MONTHS_UA = [ 'СІЧЕНЬ', 'ЛЮТИЙ', 'БЕРЕЗЕНЬ', 'КВІТЕНЬ', 'ТРАВЕНЬ', 'ЧЕРВЕНЬ', 'ЛИПЕНЬ', 'СЕРПЕНЬ', 'ВЕРЕСЕНЬ', 'ЖОВТЕНЬ', 'ЛИСТОПАД', 'ГРУДЕНЬ',];
 
@@ -78,7 +79,7 @@ export function renderCalendar() {
     </div>
 
     <div id="calendar-main-body" class="flex-1 overflow-hidden relative">
-      ${renderCalendarView({ anchorDate: cs.anchor, viewMode: cs.viewMode, expanded: true })}
+      ${renderCalendarView({ anchorDate: cs.anchor, viewMode: cs.viewMode, expanded: true, blockedSlots: blockedSlotsStore.getAll() })}
     </div>
   </div>
 
@@ -204,6 +205,7 @@ export async function initCalendar() {
       anchorDate: cs.anchor,
       viewMode: cs.viewMode,
       expanded: true,
+      blockedSlots: blockedSlotsStore.getAll(),
     });
 
     if (calLabelEl) {
@@ -402,7 +404,7 @@ export async function initCalendar() {
   refreshCalendar();
 
   try {
-    await taskStore.loadFromAPI();
+    await Promise.all([taskStore.loadFromAPI(), blockedSlotsStore.load()]);
     refreshCalendar();
   } catch (err) {
     console.error('Не вдалося завантажити задачі:', err);

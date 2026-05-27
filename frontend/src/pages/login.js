@@ -13,7 +13,7 @@ export function renderLogin() {
       <a href="#/landing" class="inline-block">
         <h1 class="text-3xl font-extrabold tracking-tight text-white mb-2">ПланІQ</h1>
       </a>
-      <p class="font-mono text-xs uppercase tracking-widest text-slate-500">Когнітивне Святилище</p>
+      <p class="font-mono text-xs uppercase tracking-widest text-slate-500">AI-планувальник задач</p>
     </div>
     <div class="bg-[#1A1A2E] rounded-xl p-8 shadow-2xl border border-white/5 relative">
       <div class="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-1 bg-gradient-to-r from-transparent via-[#c4c0ff]/50 to-transparent blur-sm"></div>
@@ -42,19 +42,6 @@ export function renderLogin() {
           Увійти
         </button>
       </form>
-      <div class="mt-10 pt-8 border-t border-white/5 space-y-4">
-        <p class="text-center text-xs text-slate-500 uppercase tracking-widest font-mono">Або за допомогою</p>
-        <div class="grid grid-cols-2 gap-4">
-          <button class="flex items-center justify-center gap-2 bg-[#292935] hover:bg-[#343440] transition-colors py-3 rounded-lg border border-white/5" id="login-google">
-            <span class="material-symbols-outlined text-lg">mail</span>
-            <span class="text-sm font-medium">Google</span>
-          </button>
-          <button class="flex items-center justify-center gap-2 bg-[#292935] hover:bg-[#343440] transition-colors py-3 rounded-lg border border-white/5" id="login-apple">
-            <span class="material-symbols-outlined text-lg">smartphone</span>
-            <span class="text-sm font-medium">Apple</span>
-          </button>
-        </div>
-      </div>
     </div>
     <p class="text-center mt-8 text-[#c7c4d8] text-sm">
       Немає акаунту?
