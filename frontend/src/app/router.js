@@ -195,6 +195,10 @@ window.addEventListener('notifications-update', (e) => {
   }
 });
 
+window.addEventListener('user-profile-updated', () => {
+  navigate();
+});
+
 // ── Старт ─────────────────────────────────────────────────────────
 window.addEventListener('hashchange', navigate);
 

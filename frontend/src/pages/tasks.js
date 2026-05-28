@@ -21,7 +21,9 @@ const getLocalDateKey = (date = new Date()) => {
 };
 
 const fmtDt = d => {
+  if (!d) return '—';
   const dt = new Date(d);
+  if (isNaN(dt.getTime())) return '—';
   const m = ['січ.','лют.','берез.','квіт.','трав.','черв.','лип.','серп.','верес.','жовт.','листоп.','груд.'];
   return `${dt.getDate()} ${m[dt.getMonth()]} ${dt.getFullYear()}`;
 };

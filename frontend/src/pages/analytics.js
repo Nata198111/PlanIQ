@@ -30,21 +30,17 @@ export function renderAnalytics() {
     <div class="text-[10px] font-bold text-[#c7c4d8] flex items-center gap-1 uppercase tracking-widest">Реальний трекінг</div>
   </div>
 
-  <div class="glass-card p-6 rounded-2xl flex flex-col justify-between h-40 relative group overflow-hidden">
-    ${devBadge()}
-    <div class="flex justify-between items-start">
-      <div><span class="text-slate-400 text-xs font-medium uppercase tracking-wider">🎯 Коефіцієнт</span><div class="text-4xl font-black text-white mt-2">82%</div></div>
-      <div class="relative w-14 h-14"><svg class="w-full h-full -rotate-90"><circle cx="28" cy="28" fill="transparent" r="24" stroke="rgba(255,255,255,0.05)" stroke-width="6"/><circle cx="28" cy="28" fill="transparent" r="24" stroke="#4ddada" stroke-dasharray="150" stroke-dashoffset="27" stroke-width="6"/></svg><span class="absolute inset-0 flex items-center justify-center text-[10px] font-mono">82%</span></div>
-    </div>
-    <div class="text-[11px] font-bold text-[#4ddada] flex items-center gap-1"><span class="material-symbols-outlined text-xs">trending_up</span>↑+5%</div>
+  <div class="glass-card p-6 rounded-2xl flex flex-col justify-between h-40 relative">
+    <div class="flex justify-between items-start"><span class="text-slate-400 text-xs font-medium uppercase tracking-wider">🎯 Виконання</span><span class="material-symbols-outlined text-[#4ddada]/60">percent</span></div>
+    <div><div class="text-5xl font-black text-white mb-2 tracking-tighter" id="stat-completion-pct">0<span class="text-xl font-medium opacity-50">%</span></div><div class="text-[11px] text-slate-500 font-medium">від усіх задач</div></div>
+    <div class="text-[10px] font-bold text-[#4ddada] flex items-center gap-1 uppercase tracking-widest">Реальний показник</div>
   </div>
 
   <div class="glass-card p-6 rounded-2xl flex flex-col justify-between h-40 relative overflow-hidden group">
-    ${devBadge()}
     <div class="absolute -right-4 -bottom-4 opacity-10"><span class="material-symbols-outlined text-9xl text-[#ffb2bc]" style="font-variation-settings:'FILL' 1">local_fire_department</span></div>
     <div class="flex justify-between items-start"><span class="text-slate-400 text-xs font-medium uppercase tracking-wider">🔥 Серія</span><span class="material-symbols-outlined text-[#ffb2bc]" style="font-variation-settings:'FILL' 1">local_fire_department</span></div>
-    <div><div class="text-4xl font-black text-white mb-1">7 днів</div><div class="text-[11px] text-slate-500">поспіль</div></div>
-    <div class="w-full h-1 bg-[#343440] rounded-full overflow-hidden mt-2"><div class="h-full bg-gradient-to-r from-[#ffb2bc] to-amber-500 w-[70%]"></div></div>
+    <div><div class="text-4xl font-black text-white mb-1" id="stat-streak">0 <span class="text-xl text-slate-400 font-medium">днів</span></div><div class="text-[11px] text-slate-500">поспіль</div></div>
+    <div class="w-full h-1 bg-[#343440] rounded-full overflow-hidden mt-2"><div class="h-full bg-gradient-to-r from-[#ffb2bc] to-amber-500 transition-all duration-700" id="stat-streak-bar" style="width:0%"></div></div>
   </div>
 </div>
 
@@ -77,25 +73,41 @@ export function renderAnalytics() {
   </div>
 </div>
 
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 relative">
-  ${devBadge()}
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
   <div class="glass-card p-8 rounded-2xl overflow-hidden relative group">
-    <div class="flex justify-between items-center mb-6"><h3 class="font-bold text-lg">Теплова карта</h3>
-      <div class="flex items-center gap-2"><span class="text-[10px] text-slate-500">Less</span><div class="flex gap-1"><div class="w-3 h-3 rounded-sm bg-[#252540]"></div><div class="w-3 h-3 rounded-sm bg-[#3a3a60]"></div><div class="w-3 h-3 rounded-sm bg-[#5252a0]"></div><div class="w-3 h-3 rounded-sm bg-[#6C63FF]"></div></div><span class="text-[10px] text-slate-500">More</span></div>
+    <div class="flex justify-between items-center mb-6">
+      <h3 class="font-bold text-lg">Теплова карта</h3>
+      <div class="flex items-center gap-2">
+        <span class="text-[10px] text-slate-500">Less</span>
+        <div class="flex gap-1">
+          <div class="w-3 h-3 rounded-sm bg-[#252540]"></div>
+          <div class="w-3 h-3 rounded-sm bg-[#3a3a60]"></div>
+          <div class="w-3 h-3 rounded-sm bg-[#5252a0]"></div>
+          <div class="w-3 h-3 rounded-sm bg-[#6C63FF]"></div>
+        </div>
+        <span class="text-[10px] text-slate-500">More</span>
+      </div>
     </div>
-    <div class="flex gap-2"><div class="flex flex-col gap-[3px] text-[8px] font-mono text-slate-500 pt-1"><span>Mon</span><div class="h-3"></div><span>Wed</span><div class="h-3"></div><span>Fri</span><div class="h-3"></div><span>Sun</span></div><div class="flex-1 overflow-x-auto no-scrollbar"><div class="grid grid-flow-col grid-rows-7 gap-[3px] w-max">${hm}</div></div></div>
+    <div class="flex gap-2">
+      <div class="text-[8px] font-mono text-slate-500" style="display:grid;grid-template-rows:repeat(7,1fr);gap:4px">
+        <span class="flex items-center">Пн</span>
+        <span class="flex items-center">Вт</span>
+        <span class="flex items-center">Ср</span>
+        <span class="flex items-center">Чт</span>
+        <span class="flex items-center">Пт</span>
+        <span class="flex items-center">Сб</span>
+        <span class="flex items-center">Нд</span>
+      </div>
+      <div class="flex-1">
+        <div class="grid grid-rows-7 gap-1 w-full" id="analytics-heatmap" style="grid-template-columns: repeat(12, 1fr)"></div>
+      </div>
+    </div>
   </div>
 
   <div class="glass-card p-8 rounded-2xl flex flex-col relative group">
     <h3 class="font-bold text-lg mb-6">Найпродуктивніший час</h3>
-    <div class="flex-1 space-y-4 mb-8">
-      <div class="flex items-center gap-4"><span class="w-10 text-[10px] font-mono text-slate-500">06:00</span><div class="flex-1 h-3 bg-[#1b1a26] rounded-full overflow-hidden"><div class="h-full bg-[#c4c0ff]/20" style="width:15%"></div></div></div>
-      <div class="flex items-center gap-4"><span class="w-10 text-[10px] font-mono text-white font-bold">10:00</span><div class="flex-1 h-3 bg-[#1b1a26] rounded-full overflow-hidden"><div class="h-full bg-[#4ddada] ai-insight-glow" style="width:85%"></div></div><span class="material-symbols-outlined text-[#4ddada] text-sm" style="font-variation-settings:'FILL' 1">bolt</span></div>
-      <div class="flex items-center gap-4"><span class="w-10 text-[10px] font-mono text-slate-500">13:00</span><div class="flex-1 h-3 bg-[#1b1a26] rounded-full overflow-hidden"><div class="h-full bg-[#c4c0ff]/20" style="width:30%"></div></div></div>
-      <div class="flex items-center gap-4"><span class="w-10 text-[10px] font-mono text-white font-bold">16:00</span><div class="flex-1 h-3 bg-[#1b1a26] rounded-full overflow-hidden"><div class="h-full bg-[#4ddada] ai-insight-glow" style="width:95%"></div></div><span class="material-symbols-outlined text-[#4ddada] text-sm" style="font-variation-settings:'FILL' 1">bolt</span></div>
-      <div class="flex items-center gap-4"><span class="w-10 text-[10px] font-mono text-slate-500">20:00</span><div class="flex-1 h-3 bg-[#1b1a26] rounded-full overflow-hidden"><div class="h-full bg-[#c4c0ff]/20" style="width:40%"></div></div></div>
-    </div>
-    ${renderAIInsight({ title: 'AI Insight', message: '<b class="text-white">Ти закриваєш найбільше задач</b> у вівторок з 14:00 до 16:00.', icon: 'lightbulb' })}
+    <div id="analytics-peak-chart" class="flex-1 space-y-4 mb-8"></div>
+    <div id="analytics-peak-insight"></div>
   </div>
 </div>
 </div>`;
@@ -373,12 +385,128 @@ const getCompletedDateKey = (task) => {
       <div class="w-full grid grid-cols-2 gap-3 px-2">${legendHtml}</div>`;
   };
 
+  const renderCompletionPct = () => {
+    const all = taskStore.getAll().filter(t => !t.parent_task_id);
+    const done = all.filter(t => t.status === 'Виконано').length;
+    const pct = all.length > 0 ? Math.round(done / all.length * 100) : 0;
+    const el = document.getElementById('stat-completion-pct');
+    if (el) el.innerHTML = `${pct}<span class="text-xl font-medium opacity-50">%</span>`;
+  };
+
+  const renderStreak = () => {
+    const uniqueDays = [...new Set(
+      getCompletedTasks().map(t => getCompletedDateKey(t)).filter(Boolean)
+    )].sort();
+
+    let streak = 0;
+    const check = new Date();
+    for (let i = 0; i < 365; i++) {
+      const key = getDayStr(check);
+      if (uniqueDays.includes(key)) {
+        streak++;
+        check.setDate(check.getDate() - 1);
+      } else if (i === 0) {
+        check.setDate(check.getDate() - 1); // сьогодні ще може бути
+      } else {
+        break;
+      }
+    }
+
+    const el = document.getElementById('stat-streak');
+    const bar = document.getElementById('stat-streak-bar');
+    if (el) el.innerHTML = `${streak} <span class="text-xl text-slate-400 font-medium">днів</span>`;
+    if (bar) bar.style.width = `${Math.min(100, streak * 10)}%`;
+  };
+
+  const renderPeakChart = () => {
+    const el = document.getElementById('analytics-peak-chart');
+    if (!el) return;
+
+    const slots = [
+      { label: '06:00', hours: [6, 7, 8] },
+      { label: '09:00', hours: [9, 10, 11] },
+      { label: '12:00', hours: [12, 13] },
+      { label: '14:00', hours: [14, 15, 16] },
+      { label: '18:00', hours: [18, 19, 20] },
+      { label: '21:00', hours: [21, 22, 23] },
+    ];
+
+    const counts = slots.map(slot =>
+      getCompletedTasks().filter(t => {
+        if (!t.completed_at) return false;
+        const h = new Date(t.completed_at.includes('Z') ? t.completed_at : t.completed_at + 'Z').getHours();
+        return slot.hours.includes(h);
+      }).length
+    );
+
+    const maxVal = Math.max(...counts, 1);
+    const peakIdx = counts.indexOf(Math.max(...counts));
+
+    el.innerHTML = slots.map((slot, i) => {
+      const pct = Math.round(counts[i] / maxVal * 100);
+      const isPeak = i === peakIdx && counts[i] > 0;
+      return `<div class="flex items-center gap-4">
+        <span class="w-10 text-[10px] font-mono ${isPeak ? 'text-white font-bold' : 'text-slate-500'}">${slot.label}</span>
+        <div class="flex-1 h-3 bg-[#1b1a26] rounded-full overflow-hidden">
+          <div class="h-full ${isPeak ? 'bg-[#4ddada]' : 'bg-[#c4c0ff]/20'} transition-all duration-700" style="width:${pct}%"></div>
+        </div>
+        ${isPeak ? '<span class="material-symbols-outlined text-[#4ddada] text-sm" style="font-variation-settings:\'FILL\' 1">bolt</span>' : '<span class="w-5"></span>'}
+      </div>`;
+    }).join('');
+
+    const insightEl = document.getElementById('analytics-peak-insight');
+    if (insightEl && counts[peakIdx] > 0) {
+      insightEl.innerHTML = renderAIInsight({
+        title: 'AI Insight',
+        message: `<b class="text-white">Ти закриваєш найбільше задач</b> близько ${slots[peakIdx].label}.`,
+        icon: 'lightbulb'
+      });
+    }
+  };
+
+  const renderHeatmap = () => {
+    const el = document.getElementById('analytics-heatmap');
+    if (!el) return;
+
+    const heatColors = ['#252540', '#3a3a60', '#5252a0', '#6C63FF'];
+    const today = new Date();
+    const dayMap = {};
+
+    getCompletedTasks().forEach(t => {
+      const key = getCompletedDateKey(t);
+      if (key) dayMap[key] = (dayMap[key] || 0) + 1;
+    });
+
+    const maxCount = Math.max(...Object.values(dayMap), 1);
+    // Знаходимо початок — понеділок 12 тижнів тому
+      const startDate = new Date(today);
+      const todayDow = (today.getDay() + 6) % 7; // 0=Пн, 6=Нд
+      startDate.setDate(today.getDate() - todayDow - 11 * 7); // початок першого тижня
+
+      let html = '';
+      for (let day = 0; day < 7; day++) {
+        for (let week = 0; week < 12; week++) {
+          const d = new Date(startDate);
+          d.setDate(startDate.getDate() + week * 7 + day);
+          const key = getDayStr(d);
+          const count = dayMap[key] || 0;
+          const colorIdx = count === 0 ? 0 : Math.min(3, Math.ceil(count / maxCount * 3));
+          html += `<div class="w-full aspect-square rounded-sm" style="background:${heatColors[colorIdx]}" title="${key}: ${count}"></div>`;
+        }
+      }
+
+      el.innerHTML = html;
+  };
+
   const refreshAnalytics = () => {
     const completedTasks = getCompletedTasks();
-
     calculateCoreStats(completedTasks);
+    renderCompletionPct();
+    renderStreak();
     renderProdChart();
     renderCatChart();
+    renderPeakChart();
+    renderHeatmap();
   };
 
   document.querySelectorAll('.prod-btn').forEach(btn => {

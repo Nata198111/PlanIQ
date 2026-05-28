@@ -10,7 +10,18 @@ import { blockedSlotsStore } from '../services/blocked-slots-store.js';
 const MOCK_TODAY = new Date();
 const MONTHS_UA = ['СІЧЕНЬ','ЛЮТИЙ','БЕРЕЗЕНЬ','КВІТЕНЬ','ТРАВЕНЬ','ЧЕРВЕНЬ','ЛИПЕНЬ','СЕРПЕНЬ','ВЕРЕСЕНЬ','ЖОВТЕНЬ','ЛИСТОПАД','ГРУДЕНЬ'];
 
-let ds = { timerId: null, seconds: 5040, paused: false, stopped: false, calMode: 'week', filter: 'all', priFilter: 'all' };
+const _saved = JSON.parse(localStorage.getItem('focus-ds') || '{}');
+let ds = {
+  timerId: null,
+  seconds: _saved.seconds || 0,
+  paused: false,
+  stopped: false,
+  calMode: _saved.calMode || 'week',
+  filter: 'all',
+  priFilter: _saved.priFilter || 'all',
+  lastFocusId: _saved.lastFocusId || null,
+  started: _saved.started || false,
+};
 ds.anchor = new Date();
 
 function calLabel() {
@@ -25,8 +36,12 @@ function calLabel() {
 }
 
 function renderPrioritiesList(filterType) {
-  let tasks = taskStore.getAll();
-  const fmtToday = new Date(MOCK_TODAY.getTime() - MOCK_TODAY.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+  let tasks = taskStore.getAll().filter(t => t.status !== 'Виконано');
+  const fmtToday = [
+    MOCK_TODAY.getFullYear(),
+    String(MOCK_TODAY.getMonth() + 1).padStart(2, '0'),
+    String(MOCK_TODAY.getDate()).padStart(2, '0')
+  ].join('-');
 
   if (filterType === 'today') {
     tasks = tasks.filter(t => t.date === fmtToday);
@@ -78,25 +93,68 @@ function renderPrioritiesList(filterType) {
 
 function getFocusTask() {
   const tasks = taskStore.getAll();
-  let focus = tasks.find(t => t.status === 'В процесі');
-  if (!focus) focus = tasks.find(t => t.status === 'Терміново');
+  const skipped = ds.skippedIds || [];
+  const fmtToday = [
+    MOCK_TODAY.getFullYear(),
+    String(MOCK_TODAY.getMonth() + 1).padStart(2, '0'),
+    String(MOCK_TODAY.getDate()).padStart(2, '0')
+  ].join('-');
+
+  const sortByRelevance = (a, b) => {
+    const getDate = (t) => t.scheduled_date || t.date || '9999';
+    const getTime = (t) => t.scheduled_time || t.time || '23:59';
+    const da = getDate(a);
+    const db = getDate(b);
+    const aOrder = da === fmtToday ? 0 : da > fmtToday ? 1 : 2;
+    const bOrder = db === fmtToday ? 0 : db > fmtToday ? 1 : 2;
+    if (aOrder !== bOrder) return aOrder - bOrder;
+    if (da !== db) return da.localeCompare(db);
+    return getTime(a).localeCompare(getTime(b));
+  };
+
+  const inProgress = tasks
+    .filter(t => t.status === 'В процесі' && !skipped.includes(t.id))
+    .sort(sortByRelevance);
+  let focus = inProgress[0] || null;
+
   if (!focus) {
-    const fmtToday = new Date(MOCK_TODAY.getTime() - MOCK_TODAY.getTimezoneOffset() * 60000).toISOString().split('T')[0];
-    const upcoming = tasks.filter(t => t.date === fmtToday && t.status !== 'Виконано').sort((a, b) => (a.time || '00:00').localeCompare(b.time || '00:00'));
-    focus = upcoming[0];
+    const urgent = tasks
+      .filter(t => t.status === 'Терміново' && !skipped.includes(t.id))
+      .sort(sortByRelevance);
+    focus = urgent[0] || null;
+  }
+  if (!focus) {
+    const fmtToday = [
+      MOCK_TODAY.getFullYear(),
+      String(MOCK_TODAY.getMonth() + 1).padStart(2, '0'),
+      String(MOCK_TODAY.getDate()).padStart(2, '0')
+    ].join('-');
+    const upcoming = tasks.filter(t => (t.scheduled_date === fmtToday || (!t.scheduled_date && t.date === fmtToday)) && t.status !== 'Виконано');
+    const skipped = ds.skippedIds || [];
+    const filtered = upcoming.filter(t => !skipped.includes(t.id));
+    if (filtered.length > 0) {
+      focus = filtered[0];
+    } else {
+      ds.skippedIds = []; // скидаємо якщо більше нема куди скіпати
+      focus = upcoming[0];
+    }
   }
   return focus || { id: 'none', title: 'Немає активної задачі', category: 'NONE', complexity: 0, time: '—', duration: '—', status: 'Очікує' };
 }
 
 function renderUpcomingTasksHTML(focusId) {
   const tasks = taskStore.getAll();
-  const fmtToday = new Date(MOCK_TODAY.getTime() - MOCK_TODAY.getTimezoneOffset() * 60000).toISOString().split('T')[0];
-  let upcoming = tasks.filter(t => t.date === fmtToday && t.status !== 'Виконано' && t.id !== focusId);
+  const fmtToday = [
+    MOCK_TODAY.getFullYear(),
+    String(MOCK_TODAY.getMonth() + 1).padStart(2, '0'),
+    String(MOCK_TODAY.getDate()).padStart(2, '0')
+  ].join('-');
+  let upcoming = tasks.filter(t => (t.scheduled_date === fmtToday || (!t.scheduled_date && t.date === fmtToday)) && t.status !== 'Виконано' && t.id !== focusId)
   upcoming.sort((a, b) => (a.time || '00:00').localeCompare(b.time || '00:00'));
   upcoming = upcoming.slice(0, 4);
 
   if (upcoming.length === 0) {
-    return `<div class="flex flex-col items-center justify-center py-6 text-center text-[#c7c4d8] border border-dashed border-white/10 rounded-xl bg-white/5"><span class="material-symbols-outlined text-3xl mb-2 opacity-50">free_cancellation</span><p class="text-[11px] font-bold">Немає більше задач</p></div>`;
+    return `<div class="flex flex-col items-center justify-center py-6 text-center text-[#c7c4d8] border border-dashed border-white/10 rounded-xl bg-white/5"><span class="material-symbols-outlined text-3xl mb-2 opacity-50">free_cancellation</span><p class="text-[11px] font-bold">Немає більше задач на сьогодні</p></div>`;
   }
 
   return upcoming.map(t => {
@@ -113,6 +171,9 @@ function renderUpcomingTasksHTML(focusId) {
     </div>`;
   }).join('');
 }
+
+function fmtTime(s)  { const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = s%60; return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`; }
+function fmtShort(s) { const h = Math.floor(s/3600), m = Math.floor((s%3600)/60); return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`; }
 
 export function renderDashboard() {
   const focusTask = getFocusTask();
@@ -138,7 +199,7 @@ export function renderDashboard() {
         <div class="relative w-48 h-48 mb-6 flex items-center justify-center flex-shrink-0">
           <svg class="w-full h-full -rotate-90"><circle class="text-[#343440]" cx="96" cy="96" fill="transparent" r="88" stroke="currentColor" stroke-width="8"></circle><circle class="text-[#c4c0ff]" cx="96" cy="96" fill="transparent" r="88" stroke="currentColor" stroke-dasharray="553" stroke-dashoffset="150" stroke-width="8" id="focus-progress"></circle></svg>
           <div class="absolute inset-0 flex flex-col items-center justify-center">
-            <span class="text-3xl font-mono font-bold tracking-tighter" id="focus-timer">01:24:00</span>
+            <span class="text-3xl font-mono font-bold tracking-tighter" id="focus-timer">${fmtTime(ds.seconds)}</span>
             <span class="text-[10px] text-[#c7c4d8] font-mono uppercase mt-1" id="focus-status-label">залишилось</span>
           </div>
         </div>
@@ -150,12 +211,17 @@ export function renderDashboard() {
       
       <div id="focus-compact-view" class="hidden w-full overflow-hidden">
         <div class="flex items-center gap-3 justify-center py-3">
-          <div class="w-12 h-12 rounded-full border-2 border-[#c4c0ff] flex items-center justify-center flex-shrink-0"><span class="text-sm font-mono font-bold" id="focus-timer-mini">01:24</span></div>
+          <div class="w-12 h-12 rounded-full border-2 border-[#c4c0ff] flex items-center justify-center flex-shrink-0"><span class="text-sm font-mono font-bold" id="focus-timer-mini">${fmtShort(ds.seconds)}</span></div>
           <div class="text-left overflow-hidden"><p class="text-sm font-bold truncate max-w-[120px]" id="focus-title-mini">${focusTask.title}</p><p class="text-[10px] text-[#c7c4d8] font-mono" id="focus-status-mini">Таймер активний</p></div>
         </div>
       </div>
       
-      <div class="flex gap-3 w-full">
+      <div id="focus-start-wrap" class="${ds.started ? 'hidden' : ''}  w-full">
+        <button class="w-full flex items-center justify-center gap-2 bg-[#c4c0ff] text-[#2000a4] py-3 rounded-xl font-bold text-sm hover:brightness-110 active:scale-95 transition-all" id="focus-start-btn">
+          <span class="material-symbols-outlined text-[16px]">play_arrow</span>Почати задачу
+        </button>
+      </div>
+      <div id="focus-action-wrap" class="${ds.started ? '' : 'hidden'} flex gap-3 w-full">
         <button class="flex-1 flex items-center justify-center gap-1.5 bg-[#c4c0ff] text-[#2000a4] py-3 rounded-xl font-bold text-sm hover:brightness-110 active:scale-95 transition-all px-2 border border-transparent whitespace-nowrap" id="focus-done-btn"><span class="material-symbols-outlined text-[16px]">check_circle</span>Виконати</button>
         <button class="flex-[0.7] flex items-center justify-center gap-1.5 bg-[#292935] text-white py-3 rounded-xl font-bold text-sm hover:bg-[#343440] active:scale-95 transition-all px-2 border border-white/5" id="focus-skip-btn">Скіп</button>
       </div>
@@ -225,8 +291,6 @@ export function renderDashboard() {
       </div>
       <div><span class="text-[10px] font-bold text-[#c7c4d8] uppercase block mb-1">Складність</span><div class="flex items-center gap-3"><div class="flex-1 h-2 bg-[#343440] rounded-full overflow-hidden"><div class="h-full bg-[#c4c0ff] transition-all" id="drawer-cx-bar"></div></div><span id="drawer-cx-val" class="text-xs font-mono text-[#c4c0ff]"></span></div></div>
       <div><span class="text-[10px] font-bold text-[#c7c4d8] uppercase block mb-2 tracking-wider">Статус</span><div class="flex flex-wrap gap-2" id="drawer-status-group"></div></div>
-      <div class="bg-[#292935] rounded-xl p-4"><div class="flex justify-between items-center mb-3"><span class="text-[10px] font-bold text-[#c7c4d8] uppercase">Таймер фокусу</span><span class="text-xs font-mono text-[#c4c0ff]" id="drawer-timer-val"></span></div><button id="drawer-timer-btn" class="w-full flex items-center justify-center gap-2 bg-[#c4c0ff] text-[#2000a4] py-3 rounded-xl font-bold text-sm"><span class="material-symbols-outlined text-sm">play_arrow</span>Розпочати таймер</button></div>
-      ${renderTaskAIActions('dash-drawer')}
       <div class="flex gap-3 pt-3 border-t border-white/5"><button id="drawer-edit-btn" class="flex-1 flex items-center justify-center gap-2 bg-[#292935] text-white py-3 rounded-xl font-bold text-sm hover:bg-[#343440]"><span class="material-symbols-outlined text-sm">edit</span>Редагувати</button><button id="drawer-delete" class="p-3 bg-[#292935] text-[#f35c7b] rounded-xl hover:bg-[#f35c7b]/10"><span class="material-symbols-outlined text-sm">delete</span></button></div>
     </div>
     <div id="drawer-edit-mode" class="hidden">
@@ -255,18 +319,26 @@ export async function initDashboard() {
   let curTid = null, formInstance = null;
 
   // ── 2. Таймер ─────────────────────────────────────────────
-  function fmtTime(s)  { const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = s%60; return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`; }
-  function fmtShort(s) { const h = Math.floor(s/3600), m = Math.floor((s%3600)/60); return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`; }
-
   function tickTimer() {
-    if (ds.paused || ds.stopped || ds.seconds <= 0) return;
+    if (!ds.started || ds.paused || ds.stopped || ds.seconds <= 0) return;
     ds.seconds--;
+    localStorage.setItem('focus-ds', JSON.stringify({
+      seconds: ds.seconds,
+      calMode: ds.calMode,
+      priFilter: ds.priFilter,
+      lastFocusId: ds.lastFocusId,
+      started: ds.started,
+    }));
     if (timerEl)   timerEl.textContent  = fmtTime(ds.seconds);
     if (timerMini) timerMini.textContent = fmtShort(ds.seconds);
     const offset = 553 - (553 * (1 - ds.seconds / 5040));
     if (progressEl) progressEl.setAttribute('stroke-dashoffset', String(Math.max(0, offset)));
   }
   ds.timerId = setInterval(tickTimer, 1000);
+  if (progressEl) {
+    const offset = 553 - (553 * (1 - ds.seconds / 5040));
+    progressEl.setAttribute('stroke-dashoffset', String(Math.max(0, offset)));
+  }
   registerCleanup(() => clearInterval(ds.timerId));
 
   // ── 3. Функція оновлення UI ────────────────────────────────
@@ -278,6 +350,42 @@ export async function initDashboard() {
     }
     const focusTask = getFocusTask();
     ds.curFocusId = focusTask.id;
+
+    if (focusTask.id === 'none') {
+      ds.seconds = 0;
+      ds.started = false;
+      ds.lastFocusId = 'none';
+      if (timerEl) timerEl.textContent = '00:00:00';
+      if (progressEl) progressEl.setAttribute('stroke-dashoffset', '553');
+      document.getElementById('focus-start-wrap')?.classList.add('hidden');
+      document.getElementById('focus-action-wrap')?.classList.add('hidden');
+    } else if (ds.lastFocusId !== focusTask.id) {
+      ds.lastFocusId = focusTask.id;
+      ds.paused = false;
+      ds.stopped = false;
+      ds.started = false;
+      const durStr = focusTask.duration || '1 год';
+      if (durStr.includes('год')) {
+        ds.seconds = Math.round((parseFloat(durStr) || 1) * 3600);
+      } else if (durStr.includes('хв')) {
+        ds.seconds = Math.round((parseFloat(durStr) || 30) * 60);
+      } else {
+        ds.seconds = 3600;
+      }
+      localStorage.setItem('focus-ds', JSON.stringify({
+        seconds: ds.seconds,
+        calMode: ds.calMode,
+        priFilter: ds.priFilter,
+        lastFocusId: ds.lastFocusId,
+        started: false,
+      }));
+      if (timerEl) timerEl.textContent = fmtTime(ds.seconds);
+      if (timerMini) timerMini.textContent = fmtShort(ds.seconds);
+      const offset = 553 - (553 * (1 - ds.seconds / 5040));
+      if (progressEl) progressEl.setAttribute('stroke-dashoffset', String(Math.max(0, offset)));
+      document.getElementById('focus-start-wrap')?.classList.remove('hidden');
+      document.getElementById('focus-action-wrap')?.classList.add('hidden');
+    }
 
     if (titleEl) titleEl.textContent = focusTask.title;
     const titleMiniEl = document.getElementById('focus-title-mini');
@@ -341,8 +449,25 @@ export async function initDashboard() {
     });
 
     const moreBtn = document.getElementById('focus-more-btn');
+    const startBtn = document.getElementById('focus-start-btn');
+    if (startBtn) {
+      startBtn.onclick = () => {
+        ds.started = true;
+        ds.paused = false;
+        ds.stopped = false;
+        document.getElementById('focus-start-wrap')?.classList.add('hidden');
+        document.getElementById('focus-action-wrap')?.classList.remove('hidden');
+        localStorage.setItem('focus-ds', JSON.stringify({
+          seconds: ds.seconds, calMode: ds.calMode, priFilter: ds.priFilter,
+          lastFocusId: ds.lastFocusId, started: true,
+        }));
+      };
+    }
     if (moreBtn && dropdown) moreBtn.onclick = (e) => { e.stopPropagation(); dropdown.classList.toggle('hidden'); };
-    document.addEventListener('click', (e) => { if (dropdown && !dropdown.contains(e.target)) dropdown.classList.add('hidden'); });
+    if (!ds._dropdownListenerAdded) {
+      ds._dropdownListenerAdded = true;
+      document.addEventListener('click', (e) => { if (dropdown && !dropdown.contains(e.target)) dropdown.classList.add('hidden'); });
+    }
 
     const ddEdit = document.getElementById('dd-edit');
     const ddPause = document.getElementById('dd-pause');
@@ -366,6 +491,31 @@ export async function initDashboard() {
     if (ddCancel) {
       ddCancel.onclick = () => {
         ds.stopped = true;
+        ds.started = false;
+        // не скидаємо lastFocusId — задача залишається та сама
+        // але повертаємо її таймер на початок
+        const durStr = taskStore.getById(ds.curFocusId)?.duration || '1 год';
+        if (durStr.includes('год')) {
+          ds.seconds = Math.round((parseFloat(durStr) || 1) * 3600);
+        } else if (durStr.includes('хв')) {
+          ds.seconds = Math.round((parseFloat(durStr) || 30) * 60);
+        } else {
+          ds.seconds = 3600;
+        }
+        if (timerEl) timerEl.textContent = fmtTime(ds.seconds);
+        if (progressEl) {
+          const offset = 553 - (553 * (1 - ds.seconds / 5040));
+          progressEl.setAttribute('stroke-dashoffset', String(Math.max(0, offset)));
+        }
+        document.getElementById('focus-start-wrap')?.classList.remove('hidden');
+        document.getElementById('focus-action-wrap')?.classList.add('hidden');
+        localStorage.setItem('focus-ds', JSON.stringify({
+          seconds: ds.seconds,
+          calMode: ds.calMode,
+          priFilter: ds.priFilter,
+          lastFocusId: ds.lastFocusId,
+          started: false,
+        }));
         toast('Фокус скасовано');
         dropdown.classList.add('hidden');
       };
@@ -381,7 +531,36 @@ export async function initDashboard() {
   toast('Виконано 🎉', 'success');
   refreshDashboard();
 };
-    if (skipBtn) skipBtn.onclick = () => { ds.stopped = true; toast('Пропущено'); refreshDashboard(); };
+    if (skipBtn) skipBtn.onclick = () => {
+      if (!ds.skippedIds) ds.skippedIds = [];
+      ds.skippedIds.push(ds.curFocusId);
+      ds.stopped = true;
+      ds.started = false;
+      ds.lastFocusId = null;
+      localStorage.setItem('focus-ds', JSON.stringify({
+        seconds: ds.seconds,
+        calMode: ds.calMode,
+        priFilter: ds.priFilter,
+        lastFocusId: null,
+        started: false,
+      }));
+      toast('Пропущено');
+      // перевіряємо чи є наступна задача
+      const next = getFocusTask();
+      if (next.id === 'none' || ds.skippedIds.includes(next.id)) {
+        // більше нема — очищуємо повністю
+        ds.seconds = 0;
+        ds.lastFocusId = 'none';
+        if (timerEl) timerEl.textContent = '00:00:00';
+        if (progressEl) progressEl.setAttribute('stroke-dashoffset', '553');
+        document.getElementById('focus-start-wrap')?.classList.add('hidden');
+        document.getElementById('focus-action-wrap')?.classList.add('hidden');
+        if (titleEl) titleEl.textContent = 'Немає активних задач';
+        const catEl = document.getElementById('focus-cat-label');
+        if (catEl) { catEl.textContent = ''; catEl.style.background = 'transparent'; }
+      }
+      refreshDashboard();
+    };
   };
 
   // ── 5. Drawer (деталі задачі) ──────────────────────────────
@@ -447,8 +626,22 @@ export async function initDashboard() {
     toast('Видалено');
   };
 
-  document.getElementById('cal-prev').onclick = () => { ds.anchor.setDate(ds.anchor.getDate() - (ds.calMode === 'week' ? 7 : 30)); refreshDashboard(); };
-  document.getElementById('cal-next').onclick = () => { ds.anchor.setDate(ds.anchor.getDate() + (ds.calMode === 'week' ? 7 : 30)); refreshDashboard(); };
+  document.getElementById('cal-prev').onclick = () => {
+    if (ds.calMode === 'week') {
+      ds.anchor.setDate(ds.anchor.getDate() - 7);
+    } else {
+      ds.anchor = new Date(ds.anchor.getFullYear(), ds.anchor.getMonth() - 1, 1);
+    }
+    refreshDashboard();
+  };
+  document.getElementById('cal-next').onclick = () => {
+    if (ds.calMode === 'week') {
+      ds.anchor.setDate(ds.anchor.getDate() + 7);
+    } else {
+      ds.anchor = new Date(ds.anchor.getFullYear(), ds.anchor.getMonth() + 1, 1);
+    }
+    refreshDashboard();
+  };
 
   // ── 6. Підписуємось на оновлення ПЕРЕД завантаженням ───────
   window.addEventListener('task-store-update', refreshDashboard);
