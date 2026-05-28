@@ -16,3 +16,7 @@ class PreferencesRepository(ABC):
     @abstractmethod
     async def update(self, prefs: UserPreferences) -> UserPreferences:
         ...
+
+    @abstractmethod
+    async def delete(self, user_id: str) -> bool:
+        ...

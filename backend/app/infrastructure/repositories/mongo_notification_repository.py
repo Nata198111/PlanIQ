@@ -80,3 +80,7 @@ class MongoNotificationRepository(NotificationRepository):
             {"_id": 1},
         )
         return doc is not None
+    
+    async def delete_all_by_user(self, user_id: str) -> int:
+        r = await self.col.delete_many({"user_id": user_id})
+        return r.deleted_count

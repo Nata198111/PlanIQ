@@ -9,6 +9,13 @@ from app.domain.models.user import User
 from app.ports.repositories.user_repository import UserRepository
 from app.schemas.auth.requests import LoginRequest, RegisterRequest, UpdateProfileRequest, ChangePasswordRequest
 from app.schemas.auth.responses import TokenResponse, UserResponse
+from app.api.v1.dependencies.task_deps import get_task_repository
+from app.api.v1.dependencies.preferences_deps import get_preferences_repository, get_notification_repository
+from app.api.v1.dependencies.blocked_slot_deps import get_blocked_slot_repository
+from app.ports.repositories.task_repository import TaskRepository
+from app.ports.repositories.notification_repository import NotificationRepository
+from app.ports.repositories.preferences_repository import PreferencesRepository
+from app.ports.repositories.blocked_slot_repository import BlockedSlotRepository
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -78,3 +85,34 @@ async def change_password(
         raise NotFoundError("User not found")
 
     return {"ok": True}
+
+
+@router.get("/me", response_model=UserResponse)
+async def get_me(current_user: User = Depends(get_current_user)):
+    """Отримати дані поточного користувача."""
+    return _user_to_response(current_user)
+
+
+@router.delete("/me", status_code=204)
+async def delete_me(
+    current_user: User = Depends(get_current_user),
+    user_repo: UserRepository = Depends(get_user_repository),
+    task_repo: TaskRepository = Depends(get_task_repository),
+    preferences_repo: PreferencesRepository = Depends(get_preferences_repository),
+    notification_repo: NotificationRepository = Depends(get_notification_repository),
+    blocked_slot_repo: BlockedSlotRepository = Depends(get_blocked_slot_repository),
+):
+    uid = current_user.id
+
+    tasks = await task_repo.get_all_by_user(uid)
+    for task in tasks:
+        await task_repo.delete(task.id, uid)
+
+    await notification_repo.delete_all_by_user(uid)
+
+    slots = await blocked_slot_repo.get_all_by_user(uid)
+    for slot in slots:
+        await blocked_slot_repo.delete(slot.id, uid)
+
+    await preferences_repo.delete(uid)
+    await user_repo.delete(uid)

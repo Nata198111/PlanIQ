@@ -33,7 +33,7 @@ export function initTaskAIActions(idPrefix = '', taskId = null, onCreated = null
     }
 
     await showDecomposeModal(task, async(createdSubtasks) => {
-      await taskStore.loadFroamAPI();
+      await taskStore.loadFromAPI();
       if (onCreated) onCreated(createdSubtasks);
     });
   };

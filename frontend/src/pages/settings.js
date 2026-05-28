@@ -3,6 +3,7 @@ import { toast } from '../services/toast.js';
 import { getUser, clearAuth, updateProfileAPI, changePasswordAPI } from '../services/auth.js';
 import { preferencesStore } from '../services/preferences-store.js';
 import { blockedSlotsStore } from '../services/blocked-slots-store.js';
+import { deleteAccountAPI } from '../services/auth.js';
 
 function escapeHTML(value = '') {
   return String(value).replace(/[&<>"']/g, char => ({
@@ -1289,11 +1290,47 @@ export async function initSettings() {
       const deleteAccount = document.getElementById('delete-account');
       if (deleteAccount) {
         deleteAccount.addEventListener('click', () => {
-          toast('Видалення акаунту буде реалізовано окремим безпечним сценарієм.', 'info');
+          // Показуємо inline підтвердження замість alert()
+          const existing = document.getElementById('delete-confirm-box');
+          if (existing) { existing.remove(); return; }
+
+          const box = document.createElement('div');
+          box.id = 'delete-confirm-box';
+          box.className = 'mt-4 p-4 bg-[#93000a]/20 border border-[#ffb2bc]/30 rounded-2xl space-y-3';
+          box.innerHTML = `
+            <p class="text-sm text-[#ffb2bc] font-medium">Ти впевнений? Всі задачі, налаштування та сповіщення будуть видалені назавжди.</p>
+            <div class="flex gap-3">
+              <button id="delete-confirm-yes" class="flex-1 py-2 bg-[#ffb2bc] text-[#670023] font-bold rounded-xl text-sm hover:brightness-110 active:scale-95 transition-all">
+                Так, видалити
+              </button>
+              <button id="delete-confirm-no" class="flex-1 py-2 bg-[#292935] text-slate-300 font-bold rounded-xl text-sm hover:bg-[#343440] active:scale-95 transition-all">
+                Скасувати
+              </button>
+            </div>`;
+
+          deleteAccount.parentElement.appendChild(box);
+
+          document.getElementById('delete-confirm-no').onclick = () => box.remove();
+
+          document.getElementById('delete-confirm-yes').onclick = async () => {
+            const yesBtn = document.getElementById('delete-confirm-yes');
+            yesBtn.disabled = true;
+            yesBtn.textContent = 'Видаляємо...';
+
+            try {
+              await deleteAccountAPI();
+              clearAuth();
+              preferencesStore.clear();
+              toast('Акаунт видалено', 'info');
+              setTimeout(() => { window.location.hash = '#/landing'; }, 400);
+            } catch (err) {
+              toast(err.message || 'Помилка видалення акаунту', 'error');
+              box.remove();
+            }
+          };
         });
       }
     }
-
 
     const saveAlgo = document.getElementById('save-algorithm');
     if (saveAlgo) {

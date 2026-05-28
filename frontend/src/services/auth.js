@@ -75,3 +75,7 @@ export async function changePasswordAPI(currentPassword, newPassword) {
     new_password: newPassword,
   });
 }
+
+export async function deleteAccountAPI() {
+  return api.delete('/auth/me');
+}

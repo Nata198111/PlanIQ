@@ -33,3 +33,8 @@ class UserRepository(ABC):
     async def update_password(self, user_id: str, hashed_password: str) -> bool:
         """Оновити пароль поточного користувача."""
         ...
+
+    @abstractmethod
+    async def delete(self, user_id: str) -> bool:
+        """Видалити користувача та повернути True якщо успішно."""
+        ...

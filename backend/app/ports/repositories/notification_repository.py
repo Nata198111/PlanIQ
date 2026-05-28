@@ -27,3 +27,7 @@ class NotificationRepository(ABC):
     @abstractmethod
     async def exists_by_task_and_type(self, task_id: str, user_id: str, notification_type: str) -> bool:
         ...
+
+    @abstractmethod
+    async def delete_all_by_user(self, user_id: str) -> int:
+        ...

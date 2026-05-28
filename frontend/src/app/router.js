@@ -36,7 +36,7 @@ function getRoute() {
   return window.location.hash.replace('#', '') || '/landing';
 }
 
-function navigate() {
+async function navigate() {
   const path  = getRoute();
   const route = routes[path];
 
@@ -63,7 +63,7 @@ function navigate() {
 
   app.classList.add('fade-out');
 
-  setTimeout(() => {
+  setTimeout(async () => {
     if (route.layout === 'app') {
       const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
       const marginClass = isCollapsed ? 'lg:ml-[80px]' : 'lg:ml-[240px]';
@@ -85,7 +85,7 @@ function navigate() {
       app.innerHTML = route.render();
     }
 
-    if (route.init) route.init();
+    if (route.init) await route.init();
     initGlobalActions();
 
     app.classList.remove('fade-out');

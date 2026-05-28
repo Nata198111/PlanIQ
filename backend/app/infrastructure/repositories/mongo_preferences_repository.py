@@ -111,3 +111,7 @@ class MongoPreferencesRepository(PreferencesRepository):
             if doc:
                 prefs.id = str(doc["_id"])
         return prefs
+    
+    async def delete(self, user_id: str) -> bool:
+        r = await self.col.delete_one({"user_id": user_id})
+        return r.deleted_count > 0
