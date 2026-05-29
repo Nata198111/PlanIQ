@@ -133,6 +133,12 @@ async def delete_task(
     current_user: User = Depends(get_current_user),
     task_repo: TaskRepository = Depends(get_task_repository),
 ):
-    """Видалити задачу."""
+    """Видалити задачу і всі її підзадачі."""
+    # Видаляємо підзадачі якщо є
+    all_tasks = await task_repo.get_all_by_user(current_user.id)
+    subtasks = [t for t in all_tasks if t.parent_task_id == task_id]
+    for subtask in subtasks:
+        await task_repo.delete(subtask.id, current_user.id)
+
     use_case = DeleteTask(task_repo)
     await use_case.execute(task_id, current_user.id)

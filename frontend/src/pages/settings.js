@@ -931,6 +931,8 @@ export async function initSettings() {
               task_overdue: document.getElementById('notif-task-overdue')?.checked ?? true,
               rescheduled: document.getElementById('notif-rescheduled')?.checked ?? true,
               planning_done: document.getElementById('notif-planning-done')?.checked ?? true,
+              weekly_digest: document.getElementById('notif-weekly-digest')?.checked ?? false,
+              motivation: document.getElementById('notif-motivation')?.checked ?? false,
               deadline_warning_hours: parseInt(document.getElementById('deadline-warning-hours')?.value || '3', 10),
               reminder_minutes: 15,
             };

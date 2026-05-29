@@ -1,11 +1,13 @@
 import { taskStore, CATEGORIES } from '../services/task-store.js';
 
 const DAYS_SHORT = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'];
-const HOURS_LIST = [
-  '08:00', '09:00', '10:00', '11:00', '12:00',
-  '13:00', '14:00', '15:00', '16:00', '17:00',
-  '18:00', '19:00', '20:00', '21:00', '22:00',
-];
+function buildHoursList(startH, endH) {
+  const hours = [];
+  for (let h = startH; h <= Math.min(endH + 2, 23); h++) {
+    hours.push(`${String(h).padStart(2, '0')}:00`);
+  }
+  return hours;
+}
 
 function getLocalDateKey(date) {
   const d = new Date(date);
@@ -54,7 +56,10 @@ function getCalendarTasks() {
       .filter(Boolean)
   );
 
-  return tasks.filter(task => !parentIdsWithSubtasks.has(task.id));
+  return tasks.filter(task =>
+    !parentIdsWithSubtasks.has(task.id) &&
+    task.status !== 'Виконано'
+  );
 }
 
 function sameDay(a, b) {
@@ -66,19 +71,19 @@ function sameDay(a, b) {
 }
 
 export function renderCalendarView(options = {}) {
-  const { expanded = false, anchorDate = new Date(), viewMode = 'week', blockedSlots = [] } = options;
+  const { expanded = false, anchorDate = new Date(), viewMode = 'week', blockedSlots = [], workStart = 8, workEnd = 18, compact = false } = options;
 
   const gridMinHeight = expanded ? 'min-h-[1200px]' : 'min-h-[840px]';
   const hourHeight = expanded ? 80 : 60;
 
   if (viewMode === 'week') {
-    return renderWeekGrid(anchorDate, hourHeight, gridMinHeight, blockedSlots);
+    return renderWeekGrid(anchorDate, hourHeight, gridMinHeight, blockedSlots, workStart, workEnd, compact);
   }
 
   return renderMonthGrid(anchorDate, expanded);
 }
 
-function renderWeekGrid(anchor, hHeight, minH, blockedSlots = []) {
+function renderWeekGrid(anchor, hHeight, minH, blockedSlots = [], workStart = 8, workEnd = 18, compact = false) {
   const startOfWeek = new Date(anchor);
   const day = startOfWeek.getDay();
   const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1);
@@ -104,6 +109,7 @@ function renderWeekGrid(anchor, hHeight, minH, blockedSlots = []) {
         </div>`;
   }
 
+  const HOURS_LIST = buildHoursList(workStart, workEnd);
   const tasks = getCalendarTasks();
 
   let timeColumnHtml =
@@ -138,7 +144,7 @@ function renderWeekGrid(anchor, hHeight, minH, blockedSlots = []) {
         const [eh, em] = slot.end_time.split(':').map(Number);
         const startHour = sh + sm / 60;
         const endHour = eh + em / 60;
-        const top = Math.max(0, (startHour - 8) * hHeight);
+        const top = Math.max(0, (startHour - workStart) * hHeight);
         const height = Math.max(20, (endHour - startHour) * hHeight);
 
         blocksHtml += `
@@ -148,39 +154,84 @@ function renderWeekGrid(anchor, hHeight, minH, blockedSlots = []) {
           </div>`;
       });
 
-    dayTasks.forEach(task => {
+    // Будуємо масив з позиціями задач
+    const taskLayouts = dayTasks.map(task => {
       const startStr = getTaskDisplayTime(task);
       const [hours, minutes] = startStr.split(':').map(Number);
-
       const safeHours = Number.isFinite(hours) ? hours : 9;
       const safeMinutes = Number.isFinite(minutes) ? minutes : 0;
-
       const startHour = safeHours + safeMinutes / 60;
-      const top = Math.max(0, (startHour - 8) * hHeight);
-
       let durationHours = 1;
+      if (task.duration?.includes('год')) durationHours = parseFloat(task.duration) || 1;
+      else if (task.duration?.includes('хв')) durationHours = (parseFloat(task.duration) || 30) / 60;
+      return { task, startHour, endHour: startHour + durationHours, startStr };
+    });
 
-      if (task.duration?.includes('год')) {
-        durationHours = parseFloat(task.duration) || 1;
-      } else if (task.duration?.includes('хв')) {
-        durationHours = (parseFloat(task.duration) || 30) / 60;
+    // Визначаємо колонки для задач що перекриваються
+    taskLayouts.forEach((item, idx) => {
+      item.col = 0;
+      item.totalCols = 1;
+      const overlapping = taskLayouts.filter((other, oidx) =>
+        oidx !== idx &&
+        item.startHour < other.endHour &&
+        item.endHour > other.startHour
+      );
+      if (overlapping.length > 0) {
+        const usedCols = overlapping.map(o => o.col).filter(c => c !== undefined);
+        let col = 0;
+        while (usedCols.includes(col)) col++;
+        item.col = col;
+        item.totalCols = overlapping.length + 1;
+        overlapping.forEach(o => { if (o.totalCols < item.totalCols) o.totalCols = item.totalCols; });
       }
+    });
 
-      const height = Math.max(30, durationHours * hHeight);
+    taskLayouts.forEach(({ task, startHour, startStr, col, totalCols }) => {
+      const top = Math.max(0, (startHour - workStart) * hHeight);
+      const endHour = startHour + (task.duration?.includes('год')
+        ? (parseFloat(task.duration) || 1)
+        : (parseFloat(task.duration) || 30) / 60);
+      const height = Math.max(30, (endHour - startHour) * hHeight);
       const category = CATEGORIES[task.category] || { color: '#c4c0ff' };
+      const cols = totalCols || 1;
+      const colW = cols > 1 ? `calc(${100 / cols}% - 4px)` : 'calc(100% - 8px)';
+      const colLeft = cols > 1 ? `calc(${(col / cols) * 100}% + 2px)` : '4px';
 
-      blocksHtml += `
-        <div class="cal-event absolute left-1 right-1 rounded-xl p-2.5 cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-all group border-l-4 shadow-xl overflow-hidden"
-             style="top:${top}px;height:${height}px;background:${category.color}20;border-left-color:${category.color};"
-             data-task="${task.id}">
-          <p class="text-[10px] font-bold leading-tight text-white group-hover:text-[#c4c0ff] transition-colors truncate">${task.title}</p>
-          ${height > 40 ? `<p class="text-[8px] font-mono text-[#c7c4d8] mt-1 truncate">${startStr}${isTaskScheduled(task) ? ' · план' : ' · дедлайн'}</p>` : ''}
-        </div>`;
+      if (compact) {
+        // Компактний режим — крапка з tooltip
+        blocksHtml += `
+          <div class="cal-event absolute group cursor-pointer z-20"
+              style="top:${top}px;left:${colLeft};width:10px;"
+              data-task="${task.id}">
+            <div class="w-2.5 h-2.5 rounded-full border-2 border-[#0d0d18] transition-transform group-hover:scale-150"
+                style="background:${category.color};box-shadow:0 0 6px ${category.color}80;"></div>
+            <div class="absolute left-3 top-0 hidden group-hover:flex z-50 pointer-events-none
+                        bg-[#1b1a26] border border-white/10 rounded-xl px-3 py-2 shadow-2xl
+                        min-w-[140px] max-w-[180px] flex-col gap-1"
+                style="filter:drop-shadow(0 4px 12px rgba(0,0,0,0.5))">
+              <p class="text-[11px] font-bold text-white leading-tight">${task.title}</p>
+              <p class="text-[9px] font-mono text-[#c7c4d8]">${startStr}${isTaskScheduled(task) ? ' · план' : ' · DL: ' + (task.time || '')}</p>
+              <div class="flex items-center gap-1 mt-0.5">
+                <div class="w-1.5 h-1.5 rounded-full" style="background:${category.color}"></div>
+                <p class="text-[9px] text-slate-400">${category.label || task.category}</p>
+              </div>
+            </div>
+          </div>`;
+      } else {
+        // Звичайний режим — повний блок
+        blocksHtml += `
+          <div class="cal-event absolute rounded-xl p-2 cursor-pointer hover:brightness-110 active:scale-[0.98] transition-all group border-l-4 shadow-xl overflow-hidden z-20"
+              style="top:${top}px;height:${height}px;width:${colW};left:${colLeft};background:${category.color}20;border-left-color:${category.color};"
+              data-task="${task.id}">
+            <p class="text-[10px] font-bold leading-tight text-white group-hover:text-[#c4c0ff] transition-colors truncate">${task.title}</p>
+            ${height > 40 ? `<p class="text-[8px] font-mono text-[#c7c4d8] mt-1 truncate">${startStr}${isTaskScheduled(task) ? ' · план' : ' · DL: ' + (task.time || '')}</p>` : ''}
+          </div>`;
+      }
     });
 
     const border = i < 6 ? ' border-r border-[#464555]/10' : '';
 
-    columnsHtml += `<div class="relative ${border} ${isToday ? 'bg-[#c4c0ff]/5' : ''}">
+    columnsHtml += `<div class="relative overflow-hidden ${border} ${isToday ? 'bg-[#c4c0ff]/5' : ''}">
       ${blocksHtml}
     </div>`;
   }
@@ -190,7 +241,7 @@ function renderWeekGrid(anchor, hHeight, minH, blockedSlots = []) {
   weekEnd.setDate(startOfWeek.getDate() + 6);
 
   const showNow = now >= startOfWeek && now <= weekEnd;
-  const nowTop = ((now.getHours() + now.getMinutes() / 60) - 8) * hHeight;
+  const nowTop = ((now.getHours() + now.getMinutes() / 60) - workStart) * hHeight;
 
   const nowLine = showNow
     ? `<div class="absolute w-full left-0 z-40 flex items-center pointer-events-none" style="top:${nowTop}px">
@@ -206,7 +257,7 @@ function renderWeekGrid(anchor, hHeight, minH, blockedSlots = []) {
         ${headerHtml}
       </div>
 
-      <div class="flex-1 relative overflow-y-auto custom-scrollbar bg-[#0d0d18]/50">
+      <div class="flex-1 relative overflow-y-auto custom-scrollbar bg-[#0d0d18]/50 scrollbar-gutter-stable">
         ${nowLine}
         <div class="grid grid-cols-[44px_repeat(7,1fr)] relative ${minH}">
           ${timeColumnHtml}

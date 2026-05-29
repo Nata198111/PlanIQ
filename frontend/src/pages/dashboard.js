@@ -6,6 +6,7 @@ import { taskStore, CATEGORIES } from '../services/task-store.js';
 import { renderTaskForm, initTaskForm } from '../components/task-form.js';
 import { renderCalendarView, initCalendarView } from '../components/calendar-view.js';
 import { blockedSlotsStore } from '../services/blocked-slots-store.js';
+import { preferencesStore } from '../services/preferences-store.js';
 
 const MOCK_TODAY = new Date();
 const MONTHS_UA = ['СІЧЕНЬ','ЛЮТИЙ','БЕРЕЗЕНЬ','КВІТЕНЬ','ТРАВЕНЬ','ЧЕРВЕНЬ','ЛИПЕНЬ','СЕРПЕНЬ','ВЕРЕСЕНЬ','ЖОВТЕНЬ','ЛИСТОПАД','ГРУДЕНЬ'];
@@ -27,10 +28,18 @@ ds.anchor = new Date();
 function calLabel() {
   const sh = (full) => full.charAt(0).toUpperCase() + full.slice(1, 3).toLowerCase();
   if (ds.calMode === 'week') {
-    const end = new Date(ds.anchor); end.setDate(end.getDate() + 6);
-    const m1 = sh(MONTHS_UA[ds.anchor.getMonth()]);
+    // Рахуємо той самий понеділок що і renderWeekGrid
+    const startOfWeek = new Date(ds.anchor);
+    const day = startOfWeek.getDay();
+    const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1);
+    startOfWeek.setDate(diff);
+    const end = new Date(startOfWeek);
+    end.setDate(startOfWeek.getDate() + 6);
+    const m1 = sh(MONTHS_UA[startOfWeek.getMonth()]);
     const m2 = sh(MONTHS_UA[end.getMonth()]);
-    return m1 === m2 ? `${m1} ${ds.anchor.getDate()}–${end.getDate()}` : `${ds.anchor.getDate()} ${m1} – ${end.getDate()} ${m2}`;
+    return m1 === m2
+      ? `${m1} ${startOfWeek.getDate()}–${end.getDate()}`
+      : `${startOfWeek.getDate()} ${m1} – ${end.getDate()} ${m2}`;
   }
   return `${sh(MONTHS_UA[ds.anchor.getMonth()])} ${ds.anchor.getFullYear()}`;
 }
@@ -241,7 +250,7 @@ export function renderDashboard() {
         <div class="flex flex-1 items-center gap-3 min-w-0 pointer-events-auto">
           <div class="flex items-center gap-1.5 lg:gap-2 text-[#c7c4d8] flex-shrink-0 bg-[#0d0d18] px-2 py-1.5 rounded-xl border border-white/5">
             <button class="p-1 hover:text-white transition-colors flex-shrink-0 flex items-center justify-center" id="cal-prev"><span class="material-symbols-outlined text-sm">chevron_left</span></button>
-            <span class="text-[11px] sm:text-xs font-mono font-bold tracking-wider whitespace-nowrap px-3 sm:px-6 text-center" id="cal-date-label">${calLabel()}</span>
+            <span class="text-[11px] sm:text-xs font-mono font-bold tracking-wider whitespace-nowrap px-3 text-center min-w-[160px] inline-block" id="cal-date-label">${calLabel()}</span>
             <button class="p-1 hover:text-white transition-colors flex-shrink-0 flex items-center justify-center" id="cal-next"><span class="material-symbols-outlined text-sm">chevron_right</span></button>
           </div>
         </div>
@@ -302,6 +311,9 @@ export function renderDashboard() {
 }
 
 export async function initDashboard() {
+  const calPrevEl = document.getElementById('cal-prev');
+  const calNextEl = document.getElementById('cal-next');
+  console.log('cal-prev exists:', !!calPrevEl, 'cal-next exists:', !!calNextEl);
   
   // ── 1. DOM елементи ────────────────────────────────────────
   const timerEl    = document.getElementById('focus-timer');
@@ -410,7 +422,17 @@ export async function initDashboard() {
       b.className = `cal-mode-btn ${b.dataset.view === ds.calMode ? 'bg-[#343440] text-white shadow' : 'text-[#c7c4d8] hover:text-white'} px-4 py-1.5 rounded-lg text-[11px] uppercase font-bold transition-all`;
     });
 
-    if (calBody) calBody.innerHTML = renderCalendarView({ anchorDate: ds.anchor, viewMode: ds.calMode, expanded: false, blockedSlots: blockedSlotsStore.getAll() });
+    const wh = preferencesStore.getWorkHours();
+    const workStart = parseInt(wh.start.split(':')[0]);
+    const workEnd = parseInt(wh.end.split(':')[0]);
+    if (calBody) calBody.innerHTML = renderCalendarView({
+      anchorDate: ds.anchor,
+      viewMode: ds.calMode,
+      expanded: false,
+      blockedSlots: blockedSlotsStore.getAll(),
+      workStart,
+      workEnd,
+    });
     if (calLabelEl) calLabelEl.textContent = calLabel();
 
     const priList = document.getElementById('pri-list');
@@ -421,6 +443,7 @@ export async function initDashboard() {
 
   // ── 4. Прив'язка подій ─────────────────────────────────────
   const bindEvents = () => {
+    console.log('bindEvents called, prevBtn:', !!document.getElementById('cal-prev'));
     initCalendarView(calBody, {
       onTaskClick: (id) => openDrawer(id),
       onDayClick:  (d)  => { ds.anchor = new Date(ds.anchor.getFullYear(), ds.anchor.getMonth(), d); ds.calMode = 'week'; refreshDashboard(); }
@@ -430,6 +453,24 @@ export async function initDashboard() {
     if (headerEl) headerEl.onclick = (e) => { if (e.target.closest('button')) return; window.location.hash = '#/calendar'; };
 
     document.querySelectorAll('.cal-mode-btn').forEach(btn => btn.onclick = (e) => { ds.calMode = e.target.dataset.view; refreshDashboard(); });
+    const prevBtn = document.getElementById('cal-prev');
+    const nextBtn = document.getElementById('cal-next');
+    if (prevBtn) prevBtn.onclick = () => {
+      if (ds.calMode === 'week') {
+        ds.anchor.setDate(ds.anchor.getDate() - 7);
+      } else {
+        ds.anchor = new Date(ds.anchor.getFullYear(), ds.anchor.getMonth() - 1, 1);
+      }
+      refreshDashboard();
+    };
+    if (nextBtn) nextBtn.onclick = () => {
+      if (ds.calMode === 'week') {
+        ds.anchor.setDate(ds.anchor.getDate() + 7);
+      } else {
+        ds.anchor = new Date(ds.anchor.getFullYear(), ds.anchor.getMonth() + 1, 1);
+      }
+      refreshDashboard();
+    };
     document.querySelectorAll('.pri-card[data-task], .next-task-item[data-task]').forEach(el => el.onclick = () => openDrawer(el.dataset.task));
 
     document.querySelectorAll('.pri-filter-btn').forEach(btn => {
@@ -624,23 +665,6 @@ export async function initDashboard() {
     await taskStore.deleteTask(curTid);
     closeDrawer();
     toast('Видалено');
-  };
-
-  document.getElementById('cal-prev').onclick = () => {
-    if (ds.calMode === 'week') {
-      ds.anchor.setDate(ds.anchor.getDate() - 7);
-    } else {
-      ds.anchor = new Date(ds.anchor.getFullYear(), ds.anchor.getMonth() - 1, 1);
-    }
-    refreshDashboard();
-  };
-  document.getElementById('cal-next').onclick = () => {
-    if (ds.calMode === 'week') {
-      ds.anchor.setDate(ds.anchor.getDate() + 7);
-    } else {
-      ds.anchor = new Date(ds.anchor.getFullYear(), ds.anchor.getMonth() + 1, 1);
-    }
-    refreshDashboard();
   };
 
   // ── 6. Підписуємось на оновлення ПЕРЕД завантаженням ───────

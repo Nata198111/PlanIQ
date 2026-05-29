@@ -53,9 +53,9 @@ export function renderSidebar(activePage, isCollapsed = false, unreadCount = 0) 
  
   <aside id="sidebar" class="w-[280px] ${isCollapsed ? 'lg:w-[80px]' : 'lg:w-[240px]'} h-screen fixed left-0 top-0 bg-[#0F0F1A] border-r border-white/5 flex flex-col py-6 z-50 shadow-2xl shadow-indigo-500/5 transition-all duration-300 -translate-x-full lg:translate-x-0">
     <div class="px-6 mb-10 flex items-center justify-between h-8">
-      <a href="#/landing" class="flex flex-col overflow-hidden items-start hover:opacity-80 transition-opacity ${isCollapsed ? 'lg:w-0 lg:opacity-0 lg:hidden' : ''}">
+      <a href="#/dashboard" class="flex flex-col overflow-hidden items-start hover:opacity-80 transition-opacity ${isCollapsed ? 'lg:w-0 lg:opacity-0 lg:hidden' : ''}">
         <h1 class="font-bold text-2xl tracking-tighter text-[#6C63FF]">ПланІQ</h1>
-        <p class="text-[10px] text-slate-500 font-mono tracking-widest mt-1">КОГНІТИВНЕ СВЯТИЛИЩЕ</p>
+        <p class="text-[10px] text-slate-500 font-mono tracking-widest mt-1">SMART ПЛАНУВАЛЬНИК</p>
       </a>
       <div class="flex items-center gap-2 ${isCollapsed ? 'lg:mx-auto' : ''}">
         <button id="sidebar-collapse-btn" class="hidden lg:flex w-8 h-8 items-center justify-center rounded-lg hover:bg-white/5 text-slate-400 hover:text-white transition-colors" title="Згорнути/Розгорнути">

@@ -4,6 +4,7 @@ import { toast } from '../services/toast.js';
 import { renderTaskForm, initTaskForm } from '../components/task-form.js';
 import { renderCalendarView, initCalendarView } from '../components/calendar-view.js';
 import { blockedSlotsStore } from '../services/blocked-slots-store.js';
+import { preferencesStore } from '../services/preferences-store.js';
 
 const MONTHS_UA = [ 'СІЧЕНЬ', 'ЛЮТИЙ', 'БЕРЕЗЕНЬ', 'КВІТЕНЬ', 'ТРАВЕНЬ', 'ЧЕРВЕНЬ', 'ЛИПЕНЬ', 'СЕРПЕНЬ', 'ВЕРЕСЕНЬ', 'ЖОВТЕНЬ', 'ЛИСТОПАД', 'ГРУДЕНЬ',];
 
@@ -201,11 +202,17 @@ export async function initCalendar() {
   const refreshCalendar = () => {
     if (!calBody) return;
 
+    const wh = preferencesStore.getWorkHours();
+    const workStart = parseInt(wh.start.split(':')[0]);
+    const workEnd = parseInt(wh.end.split(':')[0]);
+
     calBody.innerHTML = renderCalendarView({
       anchorDate: cs.anchor,
       viewMode: cs.viewMode,
-      expanded: true,
+      expanded: cs.expanded,
       blockedSlots: blockedSlotsStore.getAll(),
+      workStart,
+      workEnd,
     });
 
     if (calLabelEl) {
@@ -308,19 +315,16 @@ export async function initCalendar() {
   };
 
   const bindEvents = () => {
-    if (calBody && calBody.dataset.calendarViewBound !== 'true') {
-      initCalendarView(calBody, {
-        onTaskClick: (id) => openDrawer(id),
-        onDayClick: (day) => {
-          cs.anchor = new Date(cs.anchor.getFullYear(), cs.anchor.getMonth(), day);
-          cs.viewMode = 'week';
-          refreshCalendar();
-          toast('Перехід до тижневого перегляду', 'info');
-        },
-      });
-
-      calBody.dataset.calendarViewBound = 'true';
-    }
+    // initCalendarView завжди викликається після рендеру нового innerHTML
+    initCalendarView(calBody, {
+      onTaskClick: (id) => openDrawer(id),
+      onDayClick: (day) => {
+        cs.anchor = new Date(cs.anchor.getFullYear(), cs.anchor.getMonth(), day);
+        cs.viewMode = 'week';
+        refreshCalendar();
+        toast('Перехід до тижневого перегляду', 'info');
+      },
+    });
 
     const prevBtn = document.getElementById('cal-prev');
     const nextBtn = document.getElementById('cal-next');
@@ -329,14 +333,22 @@ export async function initCalendar() {
 
     if (prevBtn) {
       prevBtn.onclick = () => {
-        cs.anchor.setDate(cs.anchor.getDate() - (cs.viewMode === 'week' ? 7 : 30));
+        if (cs.viewMode === 'week') {
+          cs.anchor.setDate(cs.anchor.getDate() - 7);
+        } else {
+          cs.anchor = new Date(cs.anchor.getFullYear(), cs.anchor.getMonth() - 1, 1);
+        }
         refreshCalendar();
       };
     }
 
     if (nextBtn) {
       nextBtn.onclick = () => {
-        cs.anchor.setDate(cs.anchor.getDate() + (cs.viewMode === 'week' ? 7 : 30));
+        if (cs.viewMode === 'week') {
+          cs.anchor.setDate(cs.anchor.getDate() + 7);
+        } else {
+          cs.anchor = new Date(cs.anchor.getFullYear(), cs.anchor.getMonth() + 1, 1);
+        }
         refreshCalendar();
       };
     }

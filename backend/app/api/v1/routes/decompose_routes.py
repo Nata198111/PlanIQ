@@ -205,6 +205,8 @@ async def decompose_task_confirm(
 
         if planned:
             last_end = _get_task_end_datetime(planned) or last_end
+        else: 
+            break
 
     # Повертаємо актуальні дані з БД
     result = []

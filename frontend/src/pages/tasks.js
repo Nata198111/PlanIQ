@@ -376,7 +376,25 @@ export async function initTasks() {
         }
         if (result.warnings?.length) {
           console.warn('Planning warnings:', result.warnings);
+          // Показуємо перше попередження через toast
           toast(result.warnings[0], 'info');
+          // Якщо попереджень більше одного — додаємо блок під списком задач
+          if (result.warnings.length > 1) {
+            const existingWarn = document.getElementById('planning-warnings-block');
+            if (existingWarn) existingWarn.remove();
+            const warnBlock = document.createElement('div');
+            warnBlock.id = 'planning-warnings-block';
+            warnBlock.className = 'mt-4 p-4 bg-[#ffb2bc]/5 border border-[#ffb2bc]/20 rounded-2xl space-y-2';
+            warnBlock.innerHTML = `
+              <p class="text-xs font-bold text-[#ffb2bc] uppercase tracking-widest mb-2">
+                <span class="material-symbols-outlined text-sm align-middle">warning</span>
+                Попередження планування (${result.warnings.length})
+              </p>
+              ${result.warnings.map(w => `<p class="text-xs text-slate-400 leading-relaxed">• ${w}</p>`).join('')}
+            `;
+            const cont = document.getElementById('task-list-cont');
+            if (cont) cont.parentNode.insertBefore(warnBlock, cont);
+          }
         }
       } catch (err) {
         console.error('Planning error:', err);

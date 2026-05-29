@@ -621,15 +621,16 @@ class PlanningService:
 
         busy_by_day: dict[str, list[tuple[int, int]]] = {}
         for t in all_tasks:
-            plan_date = t.scheduled_date or t.date
-            plan_time = t.scheduled_time or t.time
-            if t.id == task_id or t.status == "Виконано" or t.id in parent_ids_with_subtasks or not plan_date or not plan_time:
+            # Враховуємо тільки реально заплановані задачі
+            if not t.scheduled_date or not t.scheduled_time:
+                continue
+            if t.id == task_id or t.status == "Виконано" or t.id in parent_ids_with_subtasks:
                 continue
             dur       = int(_parse_duration_minutes(t.duration) * prefs.reality_coefficient)
-            start_min = _time_to_minutes(plan_time)
-            if plan_date not in busy_by_day:
-                busy_by_day[plan_date] = []
-            busy_by_day[plan_date].append((start_min, start_min + dur))
+            start_min = _time_to_minutes(t.scheduled_time)
+            if t.scheduled_date not in busy_by_day:
+                busy_by_day[t.scheduled_date] = []
+            busy_by_day[t.scheduled_date].append((start_min, start_min + dur))
 
         work_start    = _time_to_minutes(prefs.work_hours.start)
         work_end      = _time_to_minutes(prefs.work_hours.end)
