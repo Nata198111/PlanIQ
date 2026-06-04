@@ -111,6 +111,7 @@ export function renderCalendar() {
           <div>
             <span class="text-[10px] font-bold text-slate-500 uppercase block mb-2 tracking-[0.2em]">Пріоритет</span>
             <span id="cal-drawer-pri" class="text-sm font-semibold"></span>
+            <p id="cal-drawer-pri-reason" class="text-[10px] text-slate-500 mt-1 leading-relaxed hidden"></p>
           </div>
         </div>
 
@@ -249,12 +250,24 @@ export async function initCalendar() {
     document.getElementById('cal-drawer-cat').textContent = category.label;
     document.getElementById('cal-drawer-cat').style.color = category.color;
 
-    document.getElementById('cal-drawer-pri').textContent = task.priority || '—';
+    document.getElementById('cal-drawer-pri').textContent = task.priority_label ? `${task.priority} · ${task.priority_label} (${task.priority_score})` : (task.priority || '—');
     document.getElementById('cal-drawer-date').textContent = task.scheduled_date ? `План: ${task.scheduled_date} · Дедлайн: ${task.date || '—'}` : task.date || '—';
     document.getElementById('cal-drawer-time').textContent = task.scheduled_time ? `План: ${task.scheduled_time} · Дедлайн: ${task.time || '—'}` : task.time || '—';
 
     document.getElementById('cal-drawer-cx-bar').style.width = `${(task.complexity || 0) * 10}%`;
     document.getElementById('cal-drawer-cx-val').textContent = `${task.complexity || 0}/10`;
+
+    const priReason = document.getElementById('cal-drawer-pri-reason');
+
+    if (priReason) {
+      if (task.priority_reason) {
+        priReason.textContent = task.priority_reason;
+        priReason.classList.remove('hidden');
+      } else {
+        priReason.textContent = '';
+        priReason.classList.add('hidden');
+      }
+    }
 
     const statusGroup = document.getElementById('cal-drawer-status-group');
     const statuses = ['Очікує', 'В процесі', 'Виконано', 'Терміново'];

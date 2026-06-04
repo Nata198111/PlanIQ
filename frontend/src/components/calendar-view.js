@@ -51,15 +51,10 @@ function getCalendarTasks() {
   const tasks = taskStore.getAll();
 
   const parentIdsWithSubtasks = new Set(
-    tasks
-      .map(task => task.parent_task_id)
-      .filter(Boolean)
+    tasks.map(task => task.parent_task_id).filter(Boolean)
   );
 
-  return tasks.filter(task =>
-    !parentIdsWithSubtasks.has(task.id) &&
-    task.status !== 'Виконано'
-  );
+  return tasks.filter(task => !parentIdsWithSubtasks.has(task.id));
 }
 
 function sameDay(a, b) {

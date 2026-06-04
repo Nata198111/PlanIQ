@@ -132,7 +132,7 @@ export function renderTasks() {
       <div><span class="text-[10px] font-bold text-[#c7c4d8] uppercase block mb-1 tracking-wider">Опис</span><p class="text-sm text-slate-300 leading-relaxed" id="drawer-desc"></p></div>
       <div class="grid grid-cols-2 gap-4">
         <div><span class="text-[10px] font-bold text-[#c7c4d8] uppercase block mb-1 tracking-wider">Категорія</span><span id="drawer-cat" class="text-sm font-semibold"></span></div>
-        <div><span class="text-[10px] font-bold text-[#c7c4d8] uppercase block mb-1 tracking-wider">Пріоритет</span><span id="drawer-pri" class="text-sm font-semibold"></span></div>
+        <div><span class="text-[10px] font-bold text-[#c7c4d8] uppercase block mb-1 tracking-wider">Пріоритет</span><span id="drawer-pri" class="text-sm font-semibold"></span><p id="drawer-pri-reason" class="text-[10px] text-slate-500 mt-1 leading-relaxed hidden"></p></div>
       </div>
       <div class="grid grid-cols-2 gap-4">
         <div><span class="text-[10px] font-bold text-[#c7c4d8] uppercase block mb-1 tracking-wider">Дата / Час</span><span id="drawer-datetime" class="text-sm font-mono text-white"></span></div>
@@ -246,6 +246,12 @@ export async function initTasks() {
     document.getElementById('drawer-duration').textContent = t.duration;
     document.getElementById('drawer-cx-bar').style.width   = `${t.complexity * 10}%`;
     document.getElementById('drawer-cx-val').textContent   = `${t.complexity}/10`;
+
+    const priReasonEl = document.getElementById('drawer-pri-reason');
+    if (priReasonEl) {
+      priReasonEl.textContent = t.priority_reason || '';
+      priReasonEl.classList.toggle('hidden', !t.priority_reason);
+    }
 
     const sg = document.getElementById('drawer-status-group');
     sg.innerHTML = ['Очікує', 'В процесі', 'Виконано', 'Терміново']

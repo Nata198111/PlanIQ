@@ -89,7 +89,7 @@ export function renderSidebar(activePage, isCollapsed = false, unreadCount = 0) 
         ${badgeHTML}
       </a>
  
-      <a href="#" class="text-slate-500 ${isCollapsed ? 'lg:px-0' : 'px-4'} py-3 hover:bg-slate-800/50 rounded-lg mx-2 lg:mx-0 transition-all flex items-center justify-center lg:justify-start gap-3 group" id="logout-btn" title="Вихід">
+      <a href="#" class="text-slate-500 ${isCollapsed ? 'lg:px-0 lg:justify-center' : 'px-4'} py-3 hover:bg-slate-800/50 rounded-lg mx-2 lg:mx-0 transition-all flex items-center justify-center lg:justify-start gap-3 group" id="logout-btn" title="Вихід">
         <span class="material-symbols-outlined text-[#ffb2bc] opacity-80 group-hover:opacity-100 transition-opacity">logout</span>
         <span class="text-sm ${textClass} text-[#ffb2bc] opacity-80 group-hover:opacity-100">Вихід</span>
       </a>

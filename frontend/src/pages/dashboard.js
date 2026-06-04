@@ -11,6 +11,33 @@ import { preferencesStore } from '../services/preferences-store.js';
 const MOCK_TODAY = new Date();
 const MONTHS_UA = ['СІЧЕНЬ','ЛЮТИЙ','БЕРЕЗЕНЬ','КВІТЕНЬ','ТРАВЕНЬ','ЧЕРВЕНЬ','ЛИПЕНЬ','СЕРПЕНЬ','ВЕРЕСЕНЬ','ЖОВТЕНЬ','ЛИСТОПАД','ГРУДЕНЬ'];
 
+function getLocalDateKey(date = MOCK_TODAY) {
+  const d = new Date(date);
+  return [
+    d.getFullYear(),
+    String(d.getMonth() + 1).padStart(2, '0'),
+    String(d.getDate()).padStart(2, '0'),
+  ].join('-');
+}
+
+function getTaskPlanDate(task) {
+  return task.scheduled_date || task.date || '';
+}
+
+function getTaskPlanTime(task) {
+  return task.scheduled_time || task.time || '23:59';
+}
+
+function getTaskPlanDateTime(task) {
+  const planDate = getTaskPlanDate(task);
+  const planTime = getTaskPlanTime(task);
+
+  if (!planDate) return null;
+
+  const dt = new Date(`${planDate}T${planTime}`);
+  return Number.isNaN(dt.getTime()) ? null : dt;
+}
+
 const _saved = JSON.parse(localStorage.getItem('focus-ds') || '{}');
 let ds = {
   timerId: null,
@@ -46,14 +73,10 @@ function calLabel() {
 
 function renderPrioritiesList(filterType) {
   let tasks = taskStore.getAll().filter(t => t.status !== 'Виконано');
-  const fmtToday = [
-    MOCK_TODAY.getFullYear(),
-    String(MOCK_TODAY.getMonth() + 1).padStart(2, '0'),
-    String(MOCK_TODAY.getDate()).padStart(2, '0')
-  ].join('-');
+  const fmtToday = getLocalDateKey();
 
   if (filterType === 'today') {
-    tasks = tasks.filter(t => t.date === fmtToday);
+    tasks = tasks.filter(t => getTaskPlanDate(t) === fmtToday);
   } else if (filterType === 'urgent') {
     tasks = tasks.filter(t => t.status === 'Терміново' || t.priority === 'High');
   }
@@ -61,14 +84,23 @@ function renderPrioritiesList(filterType) {
   tasks.sort((a, b) => {
     if (a.status === 'Терміново' && b.status !== 'Терміново') return -1;
     if (a.status !== 'Терміново' && b.status === 'Терміново') return 1;
-    const pWeight = { 'High': 3, 'Mid': 2, 'Low': 1 };
+
+    const pWeight = { High: 3, Mid: 2, Low: 1 };
     const wa = pWeight[a.priority] || 0;
     const wb = pWeight[b.priority] || 0;
+
     if (wa !== wb) return wb - wa;
-    if (a.date !== b.date) {
-      if (!a.date) return 1; if (!b.date) return -1;
-      return a.date.localeCompare(b.date);
+
+    const aDateTime = getTaskPlanDateTime(a);
+    const bDateTime = getTaskPlanDateTime(b);
+
+    if (aDateTime && bDateTime && aDateTime.getTime() !== bDateTime.getTime()) {
+      return aDateTime - bDateTime;
     }
+
+    if (aDateTime && !bDateTime) return -1;
+    if (!aDateTime && bDateTime) return 1;
+
     return (b.complexity || 0) - (a.complexity || 0);
   });
 
@@ -78,7 +110,7 @@ function renderPrioritiesList(filterType) {
     return `<div class="flex flex-col items-center justify-center py-8 text-center text-[#c7c4d8] border border-dashed border-white/10 rounded-xl bg-white/5"><span class="material-symbols-outlined text-4xl mb-3 opacity-50">task_alt</span><p class="text-sm font-bold">Немає задач</p><p class="text-[10px] opacity-70 mt-1">Змініть фільтр</p></div>`;
   }
 
-  const dotColors = { 'High': '#ffb4ab', 'Mid': '#4ddada', 'Low': '#c7c4d8', 'Терміново': '#ffb4ab' };
+  const dotColors = { High: '#ffb4ab', Mid: '#4ddada', Low: '#c7c4d8', 'Терміново': '#ffb4ab' };
 
   return topTasks.map((t, idx) => {
     const num = idx + 1;
@@ -88,12 +120,13 @@ function renderPrioritiesList(filterType) {
     const numBorder = !isTop;
     const priLabel = t.priority || 'Mid';
     const pulse = (priLabel === 'High' || t.status === 'Терміново') ? ' animate-pulse' : '';
+    const planDate = getTaskPlanDate(t) || '—';
 
     return `<div class="pri-card bg-[#1b1a26] p-4 rounded-2xl flex gap-4 group hover:bg-[#292935] transition-all cursor-pointer${priLabel === 'Low' ? ' opacity-80' : ''}" data-task="${t.id}" data-pri="${priLabel}">
       <div class="flex-shrink-0 w-8 h-8 ${numBg} ${numText} rounded-xl flex items-center justify-center font-mono text-sm font-black${numBorder ? ' border border-[#464555]/20' : ' shadow-lg shadow-[#c4c0ff]/20'}">${num}</div>
       <div class="flex-1 min-w-0">
         <div class="flex justify-between items-start mb-2 gap-3"><h4 class="text-sm font-bold group-hover:text-[#c4c0ff] transition-colors truncate">${t.title}</h4><span class="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1.5${pulse}" style="background:${dotColors[priLabel] || '#c7c4d8'}"></span></div>
-        <div class="flex items-center justify-between text-[10px] font-mono text-[#c7c4d8] mb-3"><span class="flex items-center gap-1 flex-shrink-0"><span class="material-symbols-outlined text-[12px]">calendar_today</span> ${t.date || '—'}</span><span class="bg-[#343440] px-1.5 py-0.5 rounded flex-shrink-0 ml-2 truncate max-w-[80px] text-center">${priLabel}</span></div>
+        <div class="flex items-center justify-between text-[10px] font-mono text-[#c7c4d8] mb-3"><span class="flex items-center gap-1 flex-shrink-0"><span class="material-symbols-outlined text-[12px]">calendar_today</span> ${planDate}</span><span class="bg-[#343440] px-1.5 py-0.5 rounded flex-shrink-0 ml-2 truncate max-w-[80px] text-center">${priLabel}</span></div>
         <div class="space-y-1"><div class="flex justify-between text-[8px] font-bold uppercase tracking-wider text-[#c7c4d8]"><span>Складність</span><span class="text-[#c4c0ff]">${t.complexity || 0}/10</span></div><div class="h-1 bg-[#343440] rounded-full overflow-hidden"><div class="h-full bg-[#c4c0ff]" style="width:${(t.complexity || 0) * 10}%"></div></div></div>
       </div>
     </div>`;
@@ -153,13 +186,24 @@ function getFocusTask() {
 
 function renderUpcomingTasksHTML(focusId) {
   const tasks = taskStore.getAll();
-  const fmtToday = [
-    MOCK_TODAY.getFullYear(),
-    String(MOCK_TODAY.getMonth() + 1).padStart(2, '0'),
-    String(MOCK_TODAY.getDate()).padStart(2, '0')
-  ].join('-');
-  let upcoming = tasks.filter(t => (t.scheduled_date === fmtToday || (!t.scheduled_date && t.date === fmtToday)) && t.status !== 'Виконано' && t.id !== focusId)
-  upcoming.sort((a, b) => (a.time || '00:00').localeCompare(b.time || '00:00'));
+  const fmtToday = getLocalDateKey();
+
+  let upcoming = tasks.filter(t =>
+    getTaskPlanDate(t) === fmtToday &&
+    t.status !== 'Виконано' &&
+    t.id !== focusId
+  );
+
+  upcoming.sort((a, b) => {
+    const aDt = getTaskPlanDateTime(a);
+    const bDt = getTaskPlanDateTime(b);
+
+    if (aDt && bDt) return aDt - bDt;
+    if (aDt && !bDt) return -1;
+    if (!aDt && bDt) return 1;
+    return 0;
+  });
+
   upcoming = upcoming.slice(0, 4);
 
   if (upcoming.length === 0) {
@@ -176,7 +220,7 @@ function renderUpcomingTasksHTML(focusId) {
           <p class="text-[11px] font-mono text-[#c7c4d8] mt-0.5 uppercase truncate">${c.label}</p>
         </div>
       </div>
-      <span class="text-xs font-mono text-[#c7c4d8] flex-shrink-0">${t.time || '—'}</span>
+      <span class="text-xs font-mono text-[#c7c4d8] flex-shrink-0">${getTaskPlanTime(t)}</span>
     </div>`;
   }).join('');
 }
@@ -215,7 +259,7 @@ export function renderDashboard() {
         <h3 class="text-xl font-bold leading-tight mb-2 transition-colors truncate w-full px-2" id="focus-task-title">${focusTask.title}</h3>
         <div class="flex items-center gap-2 mb-6 max-w-full overflow-hidden justify-center"><span class="text-[11px] px-2 py-0.5 rounded-full border border-white/10 font-semibold tracking-wide uppercase truncate block max-w-full" id="focus-cat-label" style="background:${cat.color}15;color:${cat.color}">${cat.label}</span></div>
         <div class="w-full bg-[#343440] h-1.5 rounded-full mb-2 relative overflow-hidden"><div class="absolute top-0 left-0 h-full bg-[#c4c0ff] w-2/3 rounded-full"></div></div>
-        <div class="flex justify-between w-full text-[10px] font-mono text-[#c7c4d8] mb-8"><span id="focus-time-label">${focusTask.time || '—'}</span><span id="focus-dur-label">${focusTask.duration || '—'}</span></div>
+        <div class="flex justify-between w-full text-[10px] font-mono text-[#c7c4d8] mb-8"><span id="focus-time-label">${getTaskPlanTime(focusTask)}</span><span id="focus-dur-label">${focusTask.duration || '—'}</span></div>
       </div>
       
       <div id="focus-compact-view" class="hidden w-full overflow-hidden">
@@ -237,7 +281,7 @@ export function renderDashboard() {
     </section>
 
     <section class="flex flex-col border border-white/5 bg-[#0d0d18]/50 rounded-2xl p-5 overflow-hidden max-w-full">
-      <h2 class="text-lg font-bold mb-4 flex items-center justify-between"><span class="truncate pr-2">Наступні задачі</span><span class="text-xs font-medium text-[#c7c4d8] flex-shrink-0">Заплановано</span></h2>
+      <h2 class="text-lg font-bold mb-4 flex items-center justify-between"><span class="truncate pr-2">Наступні задачі</span></h2>
       <div class="space-y-3 custom-scrollbar overflow-y-auto pr-2 w-full max-h-[400px]" id="upcoming-tasks-list">
         ${renderUpcomingTasksHTML(ds.curFocusId)}
       </div>
@@ -292,7 +336,7 @@ export function renderDashboard() {
       <div><span class="text-[10px] font-bold text-[#c7c4d8] uppercase block mb-1">Опис</span><p class="text-sm text-slate-300 leading-relaxed" id="drawer-desc"></p></div>
       <div class="grid grid-cols-2 gap-4">
         <div><span class="text-[10px] font-bold text-[#c7c4d8] uppercase block mb-1">Категорія</span><span id="drawer-cat" class="text-sm font-semibold"></span></div>
-        <div><span class="text-[10px] font-bold text-[#c7c4d8] uppercase block mb-1">Пріоритет</span><span id="drawer-pri" class="text-sm font-semibold"></span></div>
+        <div><span class="text-[10px] font-bold text-[#c7c4d8] uppercase block mb-1 tracking-wider">Пріоритет</span><span id="drawer-pri" class="text-sm font-semibold"></span><p id="drawer-pri-reason" class="text-[10px] text-slate-500 mt-1 leading-relaxed hidden"></p></div>
       </div>
       <div class="grid grid-cols-2 gap-4">
         <div><span class="text-[10px] font-bold text-[#c7c4d8] uppercase block mb-1">Дата</span><span id="drawer-date" class="text-sm font-mono text-white"></span></div>
@@ -411,7 +455,7 @@ export async function initDashboard() {
       focusCatEl.style.color = c.color;
     }
     const focusTimeEl = document.getElementById('focus-time-label');
-    if (focusTimeEl) focusTimeEl.textContent = focusTask.time || '—';
+    if (focusTimeEl) focusTimeEl.textContent = getTaskPlanTime(focusTask);
     const focusDurEl = document.getElementById('focus-dur-label');
     if (focusDurEl) focusDurEl.textContent = focusTask.duration || '—';
 
@@ -620,6 +664,12 @@ export async function initDashboard() {
     document.getElementById('drawer-time').textContent = t.time;
     document.getElementById('drawer-cx-bar').style.width = `${t.complexity * 10}%`;
     document.getElementById('drawer-cx-val').textContent = `${t.complexity}/10`;
+
+    const priReasonEl = document.getElementById('drawer-pri-reason');
+    if (priReasonEl) {
+      priReasonEl.textContent = t.priority_reason || '';
+      priReasonEl.classList.toggle('hidden', !t.priority_reason);
+    }
 
     const sg = document.getElementById('drawer-status-group');
     const ss = ['Очікує', 'В процесі', 'Виконано', 'Терміново'];
